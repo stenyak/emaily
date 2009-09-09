@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><Module><ModulePrefs title="Wave Emaily Target Selection Gadget"><Require feature="wave" /><Require feature="dynamic-height"/><Require feature="locked-domain"/></ModulePrefs>
+<!--  If the header is exactly 2 lines long, then the javascript errors reported will point to the proper line number in this file. So please keep it that way. --><Content type="html"><![CDATA[
+<div id="content_div" style="height: 50px;">
+<form name="targetform" id="targetform">
+<table id="target_table">
+</table>
+</form>
+
+</div>
+<script type="text/javascript">
+
+var types=[
+	["none", "" ],
+	["to", "To:"],
+	["cc", "Cc:"]
+];
+
+var target_table = document.getElementById('target_table');
+
+String.prototype.escapeHTML = function () {
+	return(this.replace(/&/g,'&amp;').
+				replace(/>/g,'&gt;').
+				replace(/</g,'&lt;').
+				replace(/"/g,'&quot;'));
+};
+
+function redrawTable() {
+	var table_html = "";
+	var addable_participants = [];
+	var state = wave.getState();
+	var participants = wave.getParticipants();
+	for (var i = 0; i < participants.length; ++i) {
+		var id = participants[i].getId();
+		var participant_state = state.get('participantState' + id, 'to');
+		if (participant_state == 'none') {
+			addable_participants.push(id);
+        } else {
+			table_html += "<tr><td><select onChange=\"typeChanged(this, '" + id.escapeHTML() + "');\">";
+			for (var j = 0; j < types.length; ++j) {
+				if (types[j][1] == "") continue;
+				var selected = participant_state == types[j][0] ? "selected" : ""
+				table_html += "<option value=\"" + types[j][0] + "\" " + selected + ">" + types[j][1]
+			}
+			table_html += "</select> " + id.escapeHTML() + " <a href='#' onClick='removeParticipant(\"" + id.escapeHTML() + "\")'>[x]</a>";
+			table_html += "</td></tr>";
+		}
+	}
+	if (addable_participants.length) {
+		table_html += "<tr><td><select onChange='participantAddedByUser(this)'>";
+		table_html += "<option value=''>Add...";
+		for (var i = 0; i < addable_participants.length; ++i) {
+			id_html = addable_participants[i].escapeHTML();
+			table_html += "<option value='" + id_html + "'>" + id_html;
+		}
+		table_html += "</select></td></tr>";
+	}
+	target_table.innerHTML = table_html;
+	gadgets.window.adjustHeight();
+}
+
+function userStateChange(user_id, type) {
+	var delta = {}
+	delta['participantState' + user_id] = type;
+	wave.getState().submitDelta(delta);
+}
+
+function removeParticipant(id) {
+	userStateChange(id, 'none');
+}
+
+function typeChanged(select_object, id) {
+	userStateChange(id, select_object.options[select_object.selectedIndex].value);
+}
+
+function participantAddedByUser(select_object) {
+	userStateChange(select_object.options[select_object.selectedIndex].value, 'to');
+}
+
+function stateUpdated() {
+	redrawTable();
+}
+
+function participantsUpdated() {
+	redrawTable();
+}
+
+function init() {
+	if (wave && wave.isInWaveContainer()) {
+		wave.setStateCallback(stateUpdated);
+        /* TODO(dlux): this is going to be done by the robot at some point, so it can be removed here at that time */
+		wave.setParticipantCallback(participantsUpdated);
+	}
+}
+
+gadgets.util.registerOnLoadHandler(init);
+
+</script>
+]]></Content>
+</Module>
