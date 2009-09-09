@@ -13,18 +13,17 @@ public class EmailyServlet extends AbstractRobotServlet {
 		if (bundle.wasSelfAdded()) {
 			Blip blip = wavelet.getRootBlip();
 			TextView view = blip.getDocument();
-			view.insertElement(0, new FormElement(ElementType.BUTTON, "Button", "button1", "button1"));
-			view.insertElement(0, new FormElement(ElementType.CHECK, "Check", "check1", "check1"));
-			view.insertElement(0, new FormElement(ElementType.INPUT, "Input", "input1", "input1"));
-			view.insertElement(0, new FormElement(ElementType.LABEL, "Label", "label1", "label1"));
-		}
-
-		for (Event e : bundle.getEvents()) {
-			if (e.getType() == EventType.WAVELET_PARTICIPANTS_CHANGED) {
-				Blip blip = wavelet.appendBlip();
-				TextView textView = blip.getDocument();
-				textView.append("Hi, everybody!");
+			view.replace("Testing");
+			for (int i = 0; i < 3; ++i) {
+				view.append("\nTo: test" + Integer.toString(i) + "@example.com");
+				view.appendElement(new FormElement(ElementType.CHECK, "remove" + Integer.toString(i), "Remove", "CHECKED"));
 			}
+			view.append("\n\nHello,\n\n\n");
+			view.appendElement(new FormElement(ElementType.BUTTON, "emailsend", "Send Email"));
+			view.append("   ");
+			view.appendElement(new FormElement(ElementType.BUTTON, "not_email", "Not email"));
+			view.append("   ");
+			view.appendElement(new FormElement(ElementType.BUTTON, "add_bcc", "Add Bcc"));
 		}
 	}
 }
