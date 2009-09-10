@@ -24,11 +24,16 @@ var targetTable = document.getElementById('target_table');
 
 // Escapes HTML characters.
 String.prototype.escapeHTML = function () {
-	return(this.replace(/&/g,'&amp;').
-				replace(/>/g,'&gt;').
-				replace(/</g,'&lt;').
-				replace(/"/g,'&quot;'));
+	return(this.replace(/&/g, '&amp;').
+				replace(/>/g, '&gt;').
+				replace(/</g, '&lt;').
+				replace(/"/g, '&quot;'));
 };
+
+String.prototype.escapeJS = function() {
+	return(this.replace(/\\/g, '\\\\').
+	            replace(/\'/g, '\\'));
+}
 
 // the next function is copied from
 // http://code.google.com/p/doctype/source/browse/trunk/goog/string/string.js
@@ -55,13 +60,13 @@ function redrawTable() {
 		if (participantState == 'none') {
 			addableParticipants.push(id);
 		} else {
-			tableHtml.push(subs('<tr><td><select onChange="typeChanged(this, \'%s\');">', id.escapeHTML()));
+			tableHtml.push(subs('<tr><td><select onChange="typeChanged(this, \'%s\');">', id.escapeHTML().escapeJS()));
 			for (var j = 0; j < recipientTypes.length; ++j) {
 				if (recipientTypes[j][1] == '') continue;
 				var selected = participantState == recipientTypes[j][0] ? 'selected' : '';
 				tableHtml.push(subs('<option value="%s" %s>%s', recipientTypes[j][0], selected, recipientTypes[j][1]));
 			}
-			tableHtml.push(subs('</select> %s <a href="#" onClick="removeParticipant(\'%s\'); return false">[x]</a></td></tr>', id.escapeHTML(), id.escapeHTML()));
+			tableHtml.push(subs('</select> %s <a href="#" onClick="removeParticipant(\'%s\'); return false">[x]</a></td></tr>', id.escapeHTML(), id.escapeHTML().escapeJS()));
 		}
 	}
 	if (addableParticipants.length) {
