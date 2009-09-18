@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?><Module><ModulePrefs title="Wave Emaily Target Selection Gadget"><Require feature="wave" /><Require feature="dynamic-height"/><Require feature="locked-domain"/></ModulePrefs>
+<Content type="html"><![CDATA[
+<style type="text/css">
+	p { margin: 0.2em; font-size: smaller }
+</style>
 <form name="targetform" id="targetform">
-<div id="content_div""><br></div>
+<div id="content_div"><br/></div>
 </form>
 <script type="text/javascript">
 
@@ -35,7 +39,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE. 
 
-bind = function(fn, selfObj, var_args) {
+function bind(fn, selfObj, var_args) {
   var boundArgs = fn.boundArgs_;
 
   if (arguments.length > 2) {
@@ -72,6 +76,8 @@ bind = function(fn, selfObj, var_args) {
   return newfn;
 };
 
+var EMPTY_RECIPIENT = "---";
+
 // Types of wave recipients from email perspective.
 // Format:
 //   - Element 0: the value of the recipient type.
@@ -82,13 +88,13 @@ var recipientTypes = [
 	['cc', 'Cc:']    // In the 'Cc:' field of the email
 ];
 
-var contentDiv = document.getElementById('content_div');
-
 // Reassembles the gadget's main table, which contains the email participants.
-function redrawTable() {
+function redrawContent() {
+    var contentDiv = document.getElementById('content_div');
 	var newDiv = document.createElement('div');
 	var addableParticipants = [];
 	var state = wave.getState();
+	if (!state) return;  // Sometimes this function is called too early.
 	var participants = wave.getParticipants();
 	for (var i = 0; i < participants.length; ++i) {
 		var id = participants[i].getId();
@@ -96,6 +102,7 @@ function redrawTable() {
 		if (participantState == 'none') {
 			addableParticipants.push(id);
 		} else {
+			var newLine = document.createElement('p');
 			var selectObj = document.createElement('select');
 			selectObj.onchange = bind(function(userId) {
 				userParticipantTypeChange(userId, this.options[this.selectedIndex].value);
@@ -105,11 +112,11 @@ function redrawTable() {
 				var optionObj = document.createElement('option');
 				optionObj.value = recipientTypes[j][0];
 				optionObj.selected = participantState == recipientTypes[j][0];
-				optionObj.text = recipientTypes[j][1];
+				optionObj.appendChild(document.createTextNode(recipientTypes[j][1]));
 				selectObj.appendChild(optionObj);
 			}
-			newDiv.appendChild(selectObj);
-			newDiv.appendChild(document.createTextNode(" " + id + " "));
+			newLine.appendChild(selectObj);
+			newLine.appendChild(document.createTextNode(" " + id + " "));
 			var removeObj = document.createElement('a');
 			removeObj.href = "#";
 			removeObj.onclick = bind(function(userId) {
@@ -117,27 +124,29 @@ function redrawTable() {
 				return false;
 			}, removeObj, id);
 			removeObj.appendChild(document.createTextNode("[x]"));
-			newDiv.appendChild(removeObj);
-			newDiv.appendChild(document.createElement('br'));
+			newLine.appendChild(removeObj);
+			newDiv.appendChild(newLine);
 		}
 	}
 	if (addableParticipants.length) {
+		var newLine = document.createElement('p');
 		var reAddSelectObj = document.createElement('select');
 		reAddSelectObj.onchange = bind(function() {
 			userParticipantTypeChange(this.options[this.selectedIndex].value, 'to');
 		}, reAddSelectObj);
 		var addOptionObj = document.createElement('option');
-		addOptionObj.value = "";
-		addOptionObj.text = "Add...";
+		addOptionObj.value = EMPTY_RECIPIENT;
+		addOptionObj.appendChild(document.createTextNode("Add..."));
 		reAddSelectObj.appendChild(addOptionObj);
 		for (var i = 0; i < addableParticipants.length; ++i) {
 			var id = addableParticipants[i];
 			var userOptionObj = document.createElement('option');
 			userOptionObj.value = id;
-			userOptionObj.text = id;
+			userOptionObj.appendChild(document.createTextNode(id));
 			reAddSelectObj.appendChild(userOptionObj);
 		}
-		newDiv.appendChild(reAddSelectObj);
+		newLine.appendChild(reAddSelectObj);
+		newDiv.appendChild(newLine);
 	}
 	contentDiv.replaceChild(newDiv, contentDiv.childNodes[0]);
 	gadgets.window.adjustHeight();
@@ -145,6 +154,7 @@ function redrawTable() {
 
 // Submits a user participant status change to Wave.
 function userParticipantTypeChange(user_id, type) {
+	if (user_id == EMPTY_RECIPIENT) return;
 	var delta = {}
 	delta['participantState' + user_id] = type;
 	wave.getState().submitDelta(delta);
@@ -152,12 +162,12 @@ function userParticipantTypeChange(user_id, type) {
 
 // Called when the gadget state is updated.
 function stateUpdated() {
-	redrawTable();
+	redrawContent();
 }
 
 // Called when a new participant is added to the wave.
 function participantsUpdated() {
-	redrawTable();
+	redrawContent();
 }
 
 // Initialization function.
