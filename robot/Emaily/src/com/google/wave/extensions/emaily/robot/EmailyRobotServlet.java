@@ -1,10 +1,18 @@
-package com.google.wave.extensions.emaily;
+package com.google.wave.extensions.emaily.robot;
 
-import com.google.wave.api.*;
+import com.google.inject.Singleton;
+import com.google.wave.api.AbstractRobotServlet;
+import com.google.wave.api.Blip;
+import com.google.wave.api.ElementType;
+import com.google.wave.api.FormElement;
+import com.google.wave.api.RobotMessageBundle;
+import com.google.wave.api.TextView;
+import com.google.wave.api.Wavelet;
 
-public class EmailyServlet extends AbstractRobotServlet {
+@Singleton
+public class EmailyRobotServlet extends AbstractRobotServlet {
 
-	private static final long serialVersionUID = -9189126806024643150L;
+	private static final long serialVersionUID = 8878209094937861353L;
 
 	@Override
 	public void processEvents(RobotMessageBundle bundle) {
@@ -26,4 +34,5 @@ public class EmailyServlet extends AbstractRobotServlet {
 			view.appendElement(new FormElement(ElementType.BUTTON, "add_bcc", "Add Bcc"));
 		}
 	}
+
 }
