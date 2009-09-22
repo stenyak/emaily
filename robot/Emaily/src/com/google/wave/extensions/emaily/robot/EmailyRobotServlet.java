@@ -46,7 +46,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     view
         .insertElement(
             gadget_position,
-            new Gadget("http://2.latest.emaily-wave.appspot.com" +
+            new Gadget("http://emaily-wave.appspot.com" +
             		"/gadgets/target-selection-gadget.xml"));
     debugHelper.DumpWaveletState(wavelet);
   }
