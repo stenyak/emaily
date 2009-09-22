@@ -1,8 +1,5 @@
 package com.google.wave.extensions.emaily.robot;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.wave.api.AbstractRobotServlet;
@@ -17,44 +14,42 @@ import com.google.wave.api.Wavelet;
 public class EmailyRobotServlet extends AbstractRobotServlet {
 	private static final long serialVersionUID = 8878209094937861353L;
 	
+	/**
+	 * Handles all robot events.
+	 */
 	@Override
 	public void processEvents(RobotMessageBundle bundle) {
-		Wavelet wavelet = bundle.getWavelet();
-
 		if (bundle.wasSelfAdded()) {
-			handleSelfAdded(wavelet);
+			handleSelfAdded(bundle);
 		}
 	}
 
-	private void handleSelfAdded(Wavelet wavelet) {
+	/**
+	 * Handles case when the robot is added to the wave. 
+	 * @param bundle All information from the robot event.
+	 */
+	private void handleSelfAdded(RobotMessageBundle bundle) {
+		Wavelet wavelet = bundle.getWavelet();
 		Blip blip = wavelet.getRootBlip();
 		TextView view = blip.getDocument();
 		// Find position for the gadget: Right after the conversation title if any
+		// TODO(dlux): If there is no subject, then keep some space for that.
 		int gadget_position = 0;
 		for (Annotation a: view.getAnnotations("conv/title")) {
 			if (a.getRange().getEnd() > gadget_position) {
 				gadget_position = a.getRange().getEnd();
 			}
 		}
+		// TODO(dlux): Use bundle.getRobotAddress when it is working.
 		view.insertElement(gadget_position, new Gadget("http://2.latest.emaily-wave.appspot.com/gadgets/target-selection-gadget.xml"));
-		StringBuilder blipState = new StringBuilder();
-		blipState.append("Blip content:");
-		blipState.append(view.getText());
-		blipState.append("\nAnnotations:\n");
-		for (Annotation a: view.getAnnotations()) {
-			blipState.append("- ");
-			blipState.append(a.toString());
-			blipState.append("\n");
-		}
-		logger.log(Level.WARNING, blipState.toString());
+		debugHelper.DumpWaveletState(wavelet);
 	}
 
 	// Injected dependencies
-	private Logger logger;
+	DebugHelper debugHelper;
 	
 	@Inject
-	public void setLogger(Logger logger) {
-		this.logger = logger;
+	public void setDebugHelper(DebugHelper debugHelper) {
+		this.debugHelper = debugHelper;
 	}
-
 }
