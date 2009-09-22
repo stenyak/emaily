@@ -46,7 +46,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
 	}
 
 	// Injected dependencies
-	DebugHelper debugHelper;
+	privte DebugHelper debugHelper;
 	
 	@Inject
 	public void setDebugHelper(DebugHelper debugHelper) {
