@@ -9,15 +9,15 @@ import com.google.wave.extensions.emaily.robot.EmailyRobotServlet;
 
 public class EmailyServletContextListener extends GuiceServletContextListener {
 
-	@Override
-	protected Injector getInjector() {
-		return Guice.createInjector(new ServletModule() {
-			@Override
-			protected void configureServlets() {
-				serve("/_wave/robot/jsonrpc").with(EmailyRobotServlet.class);
-				serve("/_wave/robot/profile").with(EmailyProfileServlet.class);
-			}
-		});
-	}
+  @Override
+  protected Injector getInjector() {
+    return Guice.createInjector(new ServletModule() {
+      @Override
+      protected void configureServlets() {
+        serve("/_wave/robot/jsonrpc").with(EmailyRobotServlet.class);
+        serve("/_wave/robot/profile").with(EmailyProfileServlet.class);
+      }
+    });
+  }
 
 }
