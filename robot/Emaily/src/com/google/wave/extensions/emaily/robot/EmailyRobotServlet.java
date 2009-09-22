@@ -1,38 +1,55 @@
 package com.google.wave.extensions.emaily.robot;
 
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.wave.api.AbstractRobotServlet;
+import com.google.wave.api.Annotation;
 import com.google.wave.api.Blip;
-import com.google.wave.api.ElementType;
-import com.google.wave.api.FormElement;
+import com.google.wave.api.Gadget;
 import com.google.wave.api.RobotMessageBundle;
 import com.google.wave.api.TextView;
 import com.google.wave.api.Wavelet;
 
 @Singleton
 public class EmailyRobotServlet extends AbstractRobotServlet {
-
 	private static final long serialVersionUID = 8878209094937861353L;
-
+	
+	/**
+	 * Handles all robot events.
+	 */
 	@Override
 	public void processEvents(RobotMessageBundle bundle) {
-		Wavelet wavelet = bundle.getWavelet();
-
 		if (bundle.wasSelfAdded()) {
-			Blip blip = wavelet.getRootBlip();
-			TextView view = blip.getDocument();
-			view.replace("Testing");
-			for (int i = 0; i < 3; ++i) {
-				view.append("\nTo: test" + Integer.toString(i) + "@example.com");
-				view.appendElement(new FormElement(ElementType.CHECK, "remove" + Integer.toString(i), "Remove", "CHECKED"));
-			}
-			view.append("\n\nHello,\n\n\n");
-			view.appendElement(new FormElement(ElementType.BUTTON, "emailsend", "Send Email"));
-			view.append("   ");
-			view.appendElement(new FormElement(ElementType.BUTTON, "not_email", "Not email"));
-			view.append("   ");
-			view.appendElement(new FormElement(ElementType.BUTTON, "add_bcc", "Add Bcc"));
+			handleSelfAdded(bundle);
 		}
 	}
 
+	/**
+	 * Handles case when the robot is added to the wave. 
+	 * @param bundle All information from the robot event.
+	 */
+	private void handleSelfAdded(RobotMessageBundle bundle) {
+		Wavelet wavelet = bundle.getWavelet();
+		Blip blip = wavelet.getRootBlip();
+		TextView view = blip.getDocument();
+		// Find position for the gadget: Right after the conversation title if any
+		// TODO(dlux): If there is no subject, then keep some space for that.
+		int gadget_position = 0;
+		for (Annotation a: view.getAnnotations("conv/title")) {
+			if (a.getRange().getEnd() > gadget_position) {
+				gadget_position = a.getRange().getEnd();
+			}
+		}
+		// TODO(dlux): Use bundle.getRobotAddress when it is working.
+		view.insertElement(gadget_position, new Gadget("http://2.latest.emaily-wave.appspot.com/gadgets/target-selection-gadget.xml"));
+		debugHelper.DumpWaveletState(wavelet);
+	}
+
+	// Injected dependencies
+	DebugHelper debugHelper;
+	
+	@Inject
+	public void setDebugHelper(DebugHelper debugHelper) {
+		this.debugHelper = debugHelper;
+	}
 }
