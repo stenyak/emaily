@@ -3,5 +3,6 @@
   <w:capabilities>
     <w:capability name="WAVELET_PARTICIPANTS_CHANGED" content="true" />
   </w:capabilities>
-  <w:version>2</w:version>
+  <w:version>3</w:version>
+  <w:profile name="Emaily Robot" imageurl="http://1.bp.blogspot.com/_yNL0M57xbfg/Skr1tUorzkI/AAAAAAAAAIU/Texw5ki8Qw8/s320/EMAIL_ICON.jpg" profileurl="http://emaily-wave.appspot.com"/> 
 </w:robot>
