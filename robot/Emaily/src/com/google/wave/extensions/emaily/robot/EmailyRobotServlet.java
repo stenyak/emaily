@@ -27,8 +27,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   /**
    * Handles case when the robot is added to the wave.
    * 
-   * @param bundle
-   *          All information from the robot event.
+   * @param bundle All information from the robot event.
    */
   private void handleSelfAdded(RobotMessageBundle bundle) {
     Wavelet wavelet = bundle.getWavelet();
@@ -43,11 +42,9 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       }
     }
     // TODO(dlux): Use bundle.getRobotAddress when it is working.
-    view
-        .insertElement(
-            gadget_position,
-            new Gadget("http://2.latest.emaily-wave.appspot.com" +
-            		"/gadgets/target-selection-gadget.xml"));
+    view.insertElement(gadget_position, new Gadget(
+        "http://2.latest.emaily-wave.appspot.com"
+            + "/gadgets/target-selection-gadget.xml"));
     debugHelper.DumpWaveletState(wavelet);
   }
 

@@ -17,10 +17,9 @@ public class StrUtil {
   /**
    * Formats a collection of objects using the specified separator.
    * 
-   * @param objects
-   *          The collection to format.
-   * @param separator
-   *          The separator to insert between the element in the collection.
+   * @param objects The collection to format.
+   * @param separator The separator to insert between the element in the
+   *          collection.
    * @return The string representing the collection of objects.
    */
   public static String join(Collection<?> objects, String separator) {
@@ -38,10 +37,9 @@ public class StrUtil {
   /**
    * Formats an array of objects using the specified separator.
    * 
-   * @param objects
-   *          The array to format.
-   * @param separator
-   *          The separator to insert between the element in the collection.
+   * @param objects The array to format.
+   * @param separator The separator to insert between the element in the
+   *          collection.
    * @return The string representing the array of objects.
    */
   public static <T> String join(T[] objects, String separator) {
@@ -59,8 +57,7 @@ public class StrUtil {
   /**
    * Reads the content of a Reader into a string.
    * 
-   * @param reader
-   *          The reader to read from.
+   * @param reader The reader to read from.
    * @return The content of the reader.
    * @throws IOException
    */
@@ -79,8 +76,7 @@ public class StrUtil {
   /**
    * Reads the content of an InputStream into a string.
    * 
-   * @param is
-   *          The input stream to read from.
+   * @param is The input stream to read from.
    * @return The input stream content.
    * @throws IOException
    */

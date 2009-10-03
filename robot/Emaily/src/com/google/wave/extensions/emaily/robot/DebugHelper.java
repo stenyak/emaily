@@ -27,8 +27,7 @@ public class DebugHelper {
   /**
    * Logs details of a wavelet to the INFO log.
    * 
-   * @param wavelet
-   *          The wavelet to log.
+   * @param wavelet The wavelet to log.
    */
   public void DumpWaveletState(Wavelet wavelet) {
     StringBuilder sp = new StringBuilder();
@@ -40,10 +39,8 @@ public class DebugHelper {
   /**
    * Appends details of a RobotMessageBundle to the given StringBuilder.
    * 
-   * @param sp
-   *          The StringBuilder to append info to.
-   * @param bundle
-   *          The RobotMessageBundle to dump.
+   * @param sp The StringBuilder to append info to.
+   * @param bundle The RobotMessageBundle to dump.
    */
   public static void PrintRobotMessageBundleInfo(StringBuilder sp,
       RobotMessageBundle bundle) {
@@ -62,10 +59,8 @@ public class DebugHelper {
   /**
    * Appends details of a Blip to the given StringBuilder.
    * 
-   * @param sp
-   *          The StringBuilder to append info to.
-   * @param blip
-   *          The Blip MessageBundle to dump.
+   * @param sp The StringBuilder to append info to.
+   * @param blip The Blip MessageBundle to dump.
    */
   public static void PrintBlipInfo(StringBuilder sp, Blip blip) {
     sp.append("Blip info for blip ID: ").append(blip.getBlipId()).append("\n");
@@ -93,10 +88,8 @@ public class DebugHelper {
   /**
    * Appends details of a Wavelet to the given StringBuilder.
    * 
-   * @param sp
-   *          The StringBuilder to append info to.
-   * @param wavelet
-   *          The Wavelet to dump.
+   * @param sp The StringBuilder to append info to.
+   * @param wavelet The Wavelet to dump.
    */
   public static void PrintWaveletInfo(StringBuilder sp, Wavelet wavelet) {
     sp.append("Wavelet info:");
