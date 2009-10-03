@@ -11,8 +11,8 @@ public class EmailAddressUtil {
   // TODO(dlux): Use the something@emaily-wave.appspot.com email format if wave
   //   and appengine will support them.
 
-  private final Pattern waveParticipantIdToEmailPattern = Pattern
-      .compile("emaily-wave\\+(.*)\\+(.*)\\@appspot.com");
+  private final Pattern waveParticipantIdToEmailPattern = Pattern.compile(
+      "(?:(?:\\d+)\\.latest\\.)?emaily-wave\\+(.*)\\+(.*)\\@appspot.com");
 
   /**
    * Returns an email address from a wave participant ID.
