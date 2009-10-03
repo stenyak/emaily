@@ -43,5 +43,5 @@ public class EmailAddressUtil {
         + emailAddress.substring(at + 1) + "@appspot.com";
   }
 
-  private final Pattern waveIdToEmailPattern = Pattern.compile("emaily-wave\\+(.*)\\+(.*)\\@appspot.com");
+  private final Pattern waveIdToEmailPattern = Pattern.compile("(?:(?:\\d+)\\.latest\\.)?emaily-wave\\+(.*)\\+(.*)\\@appspot.com");
 }

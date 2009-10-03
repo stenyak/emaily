@@ -10,6 +10,7 @@ public class EmailAddressUtilTest {
   @Test
   public void testWaveIdToEmailAddress() {
     assertEquals("test1+test@example.com", emailAddressUtil.waveIdToEmailAddress("emaily-wave+test1+test+example.com@appspot.com"));
+    assertEquals("test1+test@example.com", emailAddressUtil.waveIdToEmailAddress("2.latest.emaily-wave+test1+test+example.com@appspot.com"));
     assertEquals(null, emailAddressUtil.waveIdToEmailAddress("hello@world.com"));
     assertEquals(null, emailAddressUtil.waveIdToEmailAddress("emaily-wave@appspot.com"));
   }
