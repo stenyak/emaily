@@ -8,20 +8,27 @@ public class EmailAddressUtilTest {
   private EmailAddressUtil emailAddressUtil = new EmailAddressUtil();
 
   @Test
-  public void testWaveIdToEmailAddress() {
-    assertEquals("test1+test@example.com", emailAddressUtil.waveIdToEmailAddress("emaily-wave+test1+test+example.com@appspot.com"));
-    assertEquals(null, emailAddressUtil.waveIdToEmailAddress("hello@world.com"));
-    assertEquals(null, emailAddressUtil.waveIdToEmailAddress("emaily-wave@appspot.com"));
+  public void testWaveParticipantIdToEmailAddress() {
+    assertEquals("test1+test@example.com",
+        emailAddressUtil.waveParticipantIdToEmailAddress(
+            "emaily-wave+test1+test+example.com@appspot.com"));
+    assertEquals(null,
+        emailAddressUtil.waveParticipantIdToEmailAddress("hello@world.com"));
+    assertEquals(null,
+        emailAddressUtil.waveParticipantIdToEmailAddress(
+            "emaily-wave@appspot.com"));
   }
 
   @Test
   public void testEmailAddressToWaveId() {
-    assertEquals("emaily-wave+test1+test+example.com@appspot.com", emailAddressUtil.emailAddressToWaveId("test1+test@example.com"));
+    assertEquals("emaily-wave+test1+test+example.com@appspot.com",
+        emailAddressUtil.emailAddressToWaveParticipantId(
+            "test1+test@example.com"));
   }
   
-  @Test(expected= RuntimeException.class)
+  @Test(expected = RuntimeException.class)
   public void testEmailAddressToWaveIdInvalidEmail() {
-    emailAddressUtil.emailAddressToWaveId("1234");
+    emailAddressUtil.emailAddressToWaveParticipantId("1234");
   }
 
 }
