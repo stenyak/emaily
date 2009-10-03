@@ -6,6 +6,7 @@ import com.google.inject.servlet.GuiceServletContextListener;
 import com.google.inject.servlet.ServletModule;
 import com.google.wave.extensions.emaily.robot.EmailyProfileServlet;
 import com.google.wave.extensions.emaily.robot.EmailyRobotServlet;
+import com.google.wave.extensions.emaily.robot.IncomingEmailServlet;
 
 public class EmailyServletContextListener extends GuiceServletContextListener {
 
@@ -16,6 +17,7 @@ public class EmailyServletContextListener extends GuiceServletContextListener {
       protected void configureServlets() {
         serve("/_wave/robot/jsonrpc").with(EmailyRobotServlet.class);
         serve("/_wave/robot/profile").with(EmailyProfileServlet.class);
+        serve("/_ah/mail/*").with(IncomingEmailServlet.class);
       }
     });
   }
