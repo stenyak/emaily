@@ -1,5 +1,7 @@
 package com.google.wave.extensions.emaily.robot;
 
+import static com.google.wave.extensions.emaily.util.StrUtil.join;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +15,6 @@ import com.google.wave.api.Event;
 import com.google.wave.api.EventType;
 import com.google.wave.api.RobotMessageBundle;
 import com.google.wave.api.Wavelet;
-import com.google.wave.extensions.emaily.util.StringPrinter;
 
 /**
  * Utility functions for debugging Wave and Robot interactions
@@ -26,82 +27,94 @@ public class DebugHelper {
   /**
    * Logs details of a wavelet to the INFO log.
    * 
-   * @param wavelet The wavelet to log.
+   * @param wavelet
+   *          The wavelet to log.
    */
   public void DumpWaveletState(Wavelet wavelet) {
-    StringPrinter sp = new StringPrinter();
+    StringBuilder sp = new StringBuilder();
     PrintWaveletInfo(sp, wavelet);
     PrintBlipInfo(sp, wavelet.getRootBlip());
     logger.log(Level.INFO, sp.toString());
   }
 
   /**
-   * Appends details of a RobotMessageBundle to the given StringPrinter.
+   * Appends details of a RobotMessageBundle to the given StringBuilder.
    * 
    * @param sp
-   *          The StringPrinter to append info to.
+   *          The StringBuilder to append info to.
    * @param bundle
    *          The RobotMessageBundle to dump.
    */
-  public static void PrintRobotMessageBundleInfo(StringPrinter sp,
+  public static void PrintRobotMessageBundleInfo(StringBuilder sp,
       RobotMessageBundle bundle) {
-    sp.println("RobotMessageBundle info:");
-    sp.catln("RobotAddress: ", bundle.getRobotAddress());
-    sp.catln("Is new wave? ", bundle.isNewWave());
-    sp.catln("Was self added? ", bundle.wasSelfAdded());
-    sp.catln("Was self removed? ", bundle.wasSelfRemoved());
+    sp.append("RobotMessageBundle info:\n");
+    sp.append("RobotAddress: ").append(bundle.getRobotAddress()).append("\n");
+    sp.append("Is new wave? ").append(bundle.isNewWave()).append("\n");
+    sp.append("Was self added? ").append(bundle.wasSelfAdded()).append("\n");
+    sp.append("Was self removed? ").append(bundle.wasSelfRemoved())
+        .append("\n");
     List<EventType> types = new ArrayList<EventType>();
     for (Event event : bundle.getEvents())
       types.add(event.getType());
-    sp.print("Events: ").joinln(types, ", ");
+    sp.append("Events: ").append(join(types, ", ")).append("\n");
   }
 
   /**
-   * Appends details of a Blip to the given StringPrinter.
+   * Appends details of a Blip to the given StringBuilder.
    * 
    * @param sp
-   *          The StringPrinter to append info to.
+   *          The StringBuilder to append info to.
    * @param blip
    *          The Blip MessageBundle to dump.
    */
-  public static void PrintBlipInfo(StringPrinter sp, Blip blip) {
-    sp.catln("Blip info for blip ID: ", blip.getBlipId());
-    sp.catln("Parent blip ID: ", blip.getParentBlipId());
-    sp.catln("Creator: ", blip.getCreator());
-    sp.catln("Last modified time: ", blip.getLastModifiedTime());
-    sp.print("Contributors: ").joinln(blip.getContributors(), ", ");
-    sp.catln("Document text:", blip.getDocument().getText());
-    sp.print("Annotations: ").joinln(blip.getDocument().getAnnotations(), ", ");
-    sp.print("Gadgets: ").joinln(
-        blip.getDocument().getGadgetView().getGadgets(), ", ");
-    sp.print("Children blip IDs: ").joinln(blip.getChildBlipIds(), ", ");
+  public static void PrintBlipInfo(StringBuilder sp, Blip blip) {
+    sp.append("Blip info for blip ID: ").append(blip.getBlipId()).append("\n");
+    sp.append("Parent blip ID: ").append(blip.getParentBlipId()).append("\n");
+    sp.append("Creator: ").append(blip.getCreator()).append("\n");
+    sp.append("Last modified time: ").append(blip.getLastModifiedTime())
+        .append("\n");
+    sp.append("Contributors: ").append(join(blip.getContributors(), ", "))
+        .append("\n");
+    sp.append("Document text:").append(blip.getDocument().getText()).append(
+        "\n");
+    sp.append("Annotations: ").append(
+        join(blip.getDocument().getAnnotations(), ", ")).append("\n");
+    sp.append("Gadgets: ").append(
+        join(blip.getDocument().getGadgetView().getGadgets(), ", ")).append(
+        "\n");
+    sp.append("Children blip IDs: ").append(join(blip.getChildBlipIds(), ", "))
+        .append("\n");
     for (Blip child : blip.getChildren())
       PrintBlipInfo(sp, child);
-    sp.catln("End of blip info for blip ID: ", blip.getBlipId());
+    sp.append("End of blip info for blip ID: ").append(blip.getBlipId())
+        .append("\n");
   }
 
   /**
-   * Appends details of a Wavelet to the given StringPrinter.
+   * Appends details of a Wavelet to the given StringBuilder.
    * 
    * @param sp
-   *          The StringPrinter to append info to.
+   *          The StringBuilder to append info to.
    * @param wavelet
    *          The Wavelet to dump.
    */
-  public static void PrintWaveletInfo(StringPrinter sp, Wavelet wavelet) {
-    sp.println("Wavelet info:");
-    sp.catln("title: ", wavelet.getTitle());
-    sp.catln("ID: ", wavelet.getWaveletId());
-    sp.catln("Wave ID: ", wavelet.getWaveId());
-    sp.catln("Creator: ", wavelet.getCreator());
-    sp.catln("Creation time: ", wavelet.getCreationTime());
-    sp.catln("Last modified time: ", wavelet.getLastModifiedTime());
-    sp.catln("Version: ", wavelet.getVersion());
-    sp.print("Participants: ").joinln(wavelet.getParticipants(), ", ");
+  public static void PrintWaveletInfo(StringBuilder sp, Wavelet wavelet) {
+    sp.append("Wavelet info:");
+    sp.append("title: ").append(wavelet.getTitle()).append("\n");
+    sp.append("ID: ").append(wavelet.getWaveletId()).append("\n");
+    sp.append("Wave ID: ").append(wavelet.getWaveId()).append("\n");
+    sp.append("Creator: ").append(wavelet.getCreator()).append("\n");
+    sp.append("Creation time: ").append(wavelet.getCreationTime()).append("\n");
+    sp.append("Last modified time: ").append(wavelet.getLastModifiedTime())
+        .append("\n");
+    sp.append("Version: ").append(wavelet.getVersion()).append("\n");
+    sp.append("Participants: ").append(join(wavelet.getParticipants(), ", "))
+        .append("\n");
     for (Map.Entry<String, String> entry : wavelet.getDataDocuments()
         .entrySet())
-      sp.catln("Data document: ", entry.getKey(), " : ", entry.getValue());
-    sp.catln("Root blip ID: ", wavelet.getRootBlipId());
+      sp.append("Data document: ").append(entry.getKey()).append(" : ").append(
+          entry.getValue()).append("\n");
+    sp.append("Root blip ID: ").append(wavelet.getRootBlipId()).append("\n");
   }
 
   // Injected dependencies

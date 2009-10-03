@@ -21,7 +21,7 @@ public class EmailyProfileServlet extends ProfileServlet {
   @Override
   public String getRobotName() {
     // TODO(dlux): Put this string to some config file.
-    return "Emaily Robot";
+    return "Emaily Robot (Dev)";
   }
 
   @Override
