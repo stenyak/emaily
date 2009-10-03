@@ -55,26 +55,35 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     Blip rootBlip = bundle.getWavelet().getRootBlip();
     TextView rootTextView = rootBlip.getDocument();
     String emailSubject;
-    String emailBody;
+    String rootBody;
     List<Annotation> titleAnnotations = rootTextView
         .getAnnotations("conv/title");
     if (titleAnnotations.size() > 0) {
       Range subjectRange = titleAnnotations.get(0).getRange();
       emailSubject = rootTextView.getText().substring(0, subjectRange.getEnd());
-      emailBody = rootTextView.getText().substring(subjectRange.getEnd());
+      rootBody = rootTextView.getText().substring(subjectRange.getEnd());
     } else {
       emailSubject = "";
-      emailBody = rootTextView.getText();
+      rootBody = rootTextView.getText();
+    }
+    boolean isRootBlip = event.getBlip().getBlipId().equals(
+        bundle.getWavelet().getRootBlipId());
+    String emailBody;
+    if (isRootBlip) {
+      emailBody = rootBody;
+    } else {
+      emailBody = event.getBlip().getDocument().getText();
     }
 
     // Get sender email addresses.
-    String senderEmail = emailAddressUtil.emailAddressToWaveParticipantId(event.getBlip()
-        .getCreator());
+    String senderEmail = emailAddressUtil.emailAddressToWaveParticipantId(
+        event.getBlip().getCreator());
 
     // Get recipients
     List<String> recipients = new ArrayList<String>();
     for (String participant : bundle.getWavelet().getParticipants()) {
-      String emailAddress = emailAddressUtil.waveParticipantIdToEmailAddress(participant);
+      String emailAddress = emailAddressUtil.waveParticipantIdToEmailAddress(
+          participant);
       if (emailAddress != null) {
         recipients.add(emailAddress);
       }

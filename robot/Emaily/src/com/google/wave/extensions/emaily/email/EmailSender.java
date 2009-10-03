@@ -45,6 +45,7 @@ public class EmailSender {
       msg.setText(body);
       Transport.send(msg);
     } catch (MessagingException e) {
+      // TODO(dlux): Need to add better error handling here.
       throw new RuntimeException("Cannot send email", e);
     } catch (UnsupportedEncodingException e) {
       throw new RuntimeException("Invalid recipients in email", e);
