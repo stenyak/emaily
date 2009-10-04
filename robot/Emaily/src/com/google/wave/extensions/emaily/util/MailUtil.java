@@ -2,7 +2,6 @@ package com.google.wave.extensions.emaily.util;
 
 import java.io.IOException;
 
-import org.apache.james.mime4j.field.address.Mailbox;
 import org.apache.james.mime4j.message.BodyPart;
 import org.apache.james.mime4j.message.Entity;
 import org.apache.james.mime4j.message.Multipart;
@@ -14,25 +13,6 @@ import org.apache.james.mime4j.message.TextBody;
  * @author taton
  */
 public class MailUtil {
-
-  private final static String EMAILY_MAILBOX_DOMAIN = "emaily.appspotmail.com";
-
-  /**
-   * Parses the wave address (participant ID) encoded in an emaily address.
-   * 
-   * @param mailbox The emaily mailbox address encoded as
-   * @return The wave participant ID. Null if the email address is malformed.
-   */
-  public static String getWaveAddress(Mailbox mailbox) {
-    if (!mailbox.getDomain().equals(EMAILY_MAILBOX_DOMAIN))
-      return null;
-    String localPart = mailbox.getLocalPart();
-    int plus = localPart.lastIndexOf("+");
-    if (plus == -1)
-      return null;
-    return localPart.substring(0, plus) + "@" + localPart.substring(plus + 1);
-  }
-
   /**
    * Formats a MIME message into a text-only message.
    * 

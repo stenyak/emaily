@@ -11,6 +11,8 @@ import com.google.wave.api.ProfileServlet;
 public class EmailyProfileServlet extends ProfileServlet {
   private static final long serialVersionUID = 8460374464245972812L;
 
+  public static final String APPSPOT_ID = "emaily-wave";
+  
   @Override
   public String getRobotAvatarUrl() {
     // TODO(dlux): Put this string to some config file.
@@ -28,6 +30,6 @@ public class EmailyProfileServlet extends ProfileServlet {
   public String getRobotProfilePageUrl() {
     // TODO(dlux): Build this file from configuration and servlet context. It
     // did not work when I tried it.
-    return "http://2.latest.emaily-wave.appspot.com/_wave/robot/profile";
+    return "http://2.latest." + APPSPOT_ID + ".appspot.com/_wave/robot/profile";
   }
 }
