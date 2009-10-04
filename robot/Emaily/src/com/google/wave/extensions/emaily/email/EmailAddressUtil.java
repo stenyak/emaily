@@ -20,7 +20,8 @@ public class EmailAddressUtil {
   /**
    * Returns the address (email or wave) which was encoded in emaily domain.
    * <p>
-   * Example: <code>
+   * Example:
+   * <code>
    *   emaily-wave+test1+example.com@appspot.com -> test1.example.com
    * </code>
    * 
@@ -39,7 +40,8 @@ public class EmailAddressUtil {
   /**
    * Encodes a wave id or email address to emaily domain.
    * <p>
-   * Example: <code>
+   * Example:
+   * <code>
    *   test1.example.com -> emaily-wave+test1+example.com@appspot.com
    * </code>
    * 
