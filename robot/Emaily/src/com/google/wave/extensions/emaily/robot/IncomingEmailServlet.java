@@ -59,7 +59,20 @@ public class IncomingEmailServlet extends HttpServlet {
   public void processIncomingEmail(HttpServletRequest req) throws IOException {
     MimeEntityConfig config = new MimeEntityConfig();
     Message message = new Message(req.getInputStream(), config);
-    emails.add(message);
+    synchronized (this) {
+      emails.add(message);
+    }
+  }
+
+  /**
+   * Returns the list of emails received and ready to be processed.
+   * 
+   * @return The list of MIME messages.
+   */
+  public synchronized List<Message> getIncomingEmails() {
+    List<Message> list = emails;
+    emails = new ArrayList<Message>();
+    return list;
   }
 
 }

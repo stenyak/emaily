@@ -64,6 +64,9 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * @param wavelet Handle to create new wavelets from.
    */
   private void sendEmails(Wavelet wavelet) {
+    // TODO(taton) Plug the incoming email servlet.
+    IncomingEmailServlet emailServlet = null;
+    List<Message> emails = emailServlet.getIncomingEmails();
     for (Message message : emails) {
       List<String> participants = new ArrayList<String>();
       participants.add("kryzthov@appspot.com");
