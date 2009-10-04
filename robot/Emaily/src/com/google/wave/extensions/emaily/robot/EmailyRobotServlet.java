@@ -1,58 +1,97 @@
 package com.google.wave.extensions.emaily.robot;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.wave.api.AbstractRobotServlet;
 import com.google.wave.api.Annotation;
 import com.google.wave.api.Blip;
-import com.google.wave.api.Gadget;
+import com.google.wave.api.Event;
+import com.google.wave.api.EventType;
+import com.google.wave.api.Range;
 import com.google.wave.api.RobotMessageBundle;
 import com.google.wave.api.TextView;
-import com.google.wave.api.Wavelet;
+import com.google.wave.extensions.emaily.email.EmailAddressUtil;
+import com.google.wave.extensions.emaily.email.EmailSender;
 
 @Singleton
 public class EmailyRobotServlet extends AbstractRobotServlet {
   private static final long serialVersionUID = 8878209094937861353L;
+
+  // Injected dependencies
+  private final EmailAddressUtil emailAddressUtil;
+  private final EmailSender emailSender;
+
+  @Inject
+  public EmailyRobotServlet(EmailAddressUtil emailAddressUtil,
+      EmailSender emailSender) {
+    this.emailAddressUtil = emailAddressUtil;
+    this.emailSender = emailSender;
+  }
 
   /**
    * Handles all robot events.
    */
   @Override
   public void processEvents(RobotMessageBundle bundle) {
-    if (bundle.wasSelfAdded()) {
-      handleSelfAdded(bundle);
+    for (Event event : bundle.getEvents()) {
+      if (event.getType() == EventType.BLIP_SUBMITTED) {
+        handleBlipSubmitted(bundle, event);
+      }
     }
   }
 
   /**
-   * Handles case when the robot is added to the wave.
+   * Handle when a blip is submitted. Currenlty it sends the blip in email
+   * immediately.
    * 
-   * @param bundle All information from the robot event.
+   * @param bundle RobotMessageBundle received from the Wave Server.
+   * @param event The BLIP_SUBMITTED event.
    */
-  private void handleSelfAdded(RobotMessageBundle bundle) {
-    Wavelet wavelet = bundle.getWavelet();
-    Blip blip = wavelet.getRootBlip();
-    TextView view = blip.getDocument();
-    // Find position for the gadget: Right after the conversation title if any
-    // TODO(dlux): If there is no subject, then keep some space for that.
-    int gadget_position = 0;
-    for (Annotation a : view.getAnnotations("conv/title")) {
-      if (a.getRange().getEnd() > gadget_position) {
-        gadget_position = a.getRange().getEnd();
+  private void handleBlipSubmitted(RobotMessageBundle bundle, Event event) {
+    // Find Email Subject
+    Blip rootBlip = bundle.getWavelet().getRootBlip();
+    TextView rootTextView = rootBlip.getDocument();
+    String emailSubject;
+    String rootBody;
+    List<Annotation> titleAnnotations = rootTextView
+        .getAnnotations("conv/title");
+    if (titleAnnotations.size() > 0) {
+      Range subjectRange = titleAnnotations.get(0).getRange();
+      emailSubject = rootTextView.getText().substring(0, subjectRange.getEnd());
+      rootBody = rootTextView.getText().substring(subjectRange.getEnd());
+    } else {
+      emailSubject = "";
+      rootBody = rootTextView.getText();
+    }
+    boolean isRootBlip = event.getBlip().getBlipId().equals(
+        bundle.getWavelet().getRootBlipId());
+    String emailBody;
+    if (isRootBlip) {
+      emailBody = rootBody;
+    } else {
+      emailBody = event.getBlip().getDocument().getText();
+    }
+
+    // Get sender email addresses.
+    String senderEmail = emailAddressUtil.encodeToEmailyDomain(
+        event.getBlip().getCreator());
+
+    // Get recipients
+    List<String> recipients = new ArrayList<String>();
+    for (String participant : bundle.getWavelet().getParticipants()) {
+      String emailAddress = emailAddressUtil.decodeFromEmailyDomain(
+          participant);
+      if (emailAddress != null) {
+        recipients.add(emailAddress);
       }
     }
-    // TODO(dlux): Use bundle.getRobotAddress when it is working.
-    view.insertElement(gadget_position, new Gadget(
-        "http://2.latest.emaily-wave.appspot.com"
-            + "/gadgets/target-selection-gadget.xml"));
-    debugHelper.DumpWaveletState(wavelet);
+    if (recipients.size() > 0) {
+      emailSender.simpleSendTextEmail(senderEmail, recipients, emailSubject,
+          emailBody);
+    }
   }
 
-  // Injected dependencies
-  private DebugHelper debugHelper;
-
-  @Inject
-  public void setDebugHelper(DebugHelper debugHelper) {
-    this.debugHelper = debugHelper;
-  }
 }
