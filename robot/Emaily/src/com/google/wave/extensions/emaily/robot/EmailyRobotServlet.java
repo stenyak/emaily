@@ -76,13 +76,13 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     }
 
     // Get sender email addresses.
-    String senderEmail = emailAddressUtil.emailAddressToWaveParticipantId(
+    String senderEmail = emailAddressUtil.encodeToEmailyDomain(
         event.getBlip().getCreator());
 
     // Get recipients
     List<String> recipients = new ArrayList<String>();
     for (String participant : bundle.getWavelet().getParticipants()) {
-      String emailAddress = emailAddressUtil.waveParticipantIdToEmailAddress(
+      String emailAddress = emailAddressUtil.decodeFromEmailyDomain(
           participant);
       if (emailAddress != null) {
         recipients.add(emailAddress);
