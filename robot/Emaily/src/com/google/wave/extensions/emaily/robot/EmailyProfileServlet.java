@@ -21,13 +21,13 @@ public class EmailyProfileServlet extends ProfileServlet {
   @Override
   public String getRobotName() {
     // TODO(dlux): Put this string to some config file.
-    return "Emaily Robot (Dev)";
+    return "Emaily Robot";
   }
 
   @Override
   public String getRobotProfilePageUrl() {
     // TODO(dlux): Build this file from configuration and servlet context. It
     // did not work when I tried it.
-    return "http://2.latest.emaily-wave.appspot.com/_wave/robot/profile";
+    return "http://emaily-wave.appspot.com/_wave/robot/profile";
   }
 }
