@@ -6,15 +6,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
+import javax.jdo.PersistenceManager;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.james.mime4j.message.Message;
-import org.apache.james.mime4j.parser.MimeEntityConfig;
 
 import com.google.inject.Singleton;
+import com.google.wave.extensions.emaily.email.PersistentEmail;
 
 /**
  * Processes incoming emails.
@@ -57,22 +58,14 @@ public class IncomingEmailServlet extends HttpServlet {
    * @throws IOException
    */
   public void processIncomingEmail(HttpServletRequest req) throws IOException {
-    MimeEntityConfig config = new MimeEntityConfig();
-    Message message = new Message(req.getInputStream(), config);
-    synchronized (this) {
-      emails.add(message);
+    byte[] data = PersistentEmail.readInputStream(req.getInputStream());
+    PersistenceManager pm = PMF.get().getPersistenceManager();
+    try {
+      PersistentEmail email = new PersistentEmail(data);
+      pm.makePersistent(email);
+    } finally {
+      pm.close();
     }
-  }
-
-  /**
-   * Returns the list of emails received and ready to be processed.
-   * 
-   * @return The list of MIME messages.
-   */
-  public synchronized List<Message> getIncomingEmails() {
-    List<Message> list = emails;
-    emails = new ArrayList<Message>();
-    return list;
   }
 
 }

@@ -1,4 +1,4 @@
-package com.google.wave.extensions.emaily.util;
+package com.google.wave.extensions.emaily.email;
 
 import java.io.IOException;
 
@@ -6,6 +6,8 @@ import org.apache.james.mime4j.message.BodyPart;
 import org.apache.james.mime4j.message.Entity;
 import org.apache.james.mime4j.message.Multipart;
 import org.apache.james.mime4j.message.TextBody;
+
+import com.google.wave.extensions.emaily.util.StrUtil;
 
 /**
  * Mail utilities.
@@ -38,7 +40,7 @@ public class MailUtil {
         return false;
       } else {
         for (BodyPart part : multipart.getBodyParts()) {
-          mimeEntityToText(sb, part); // Ignore result...
+          mimeEntityToText(sb, part);
         }
         return true;
       }
