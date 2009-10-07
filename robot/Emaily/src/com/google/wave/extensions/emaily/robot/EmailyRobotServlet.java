@@ -39,16 +39,14 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   // Injected dependencies
   private final EmailAddressUtil emailAddressUtil;
   private final EmailSender emailSender;
-  private final IncomingEmailServlet incomingEmailServlet;
   private DebugHelper debugHelper;
   private Logger logger = Logger.getLogger(EmailyRobotServlet.class.getName());
 
   @Inject
   public EmailyRobotServlet(EmailAddressUtil emailAddressUtil,
-      EmailSender emailSender, IncomingEmailServlet incomingEmailServlet) {
+      EmailSender emailSender) {
     this.emailAddressUtil = emailAddressUtil;
     this.emailSender = emailSender;
-    this.incomingEmailServlet = incomingEmailServlet;
   }
 
   /**

@@ -2,8 +2,6 @@ package com.google.wave.extensions.emaily.robot;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 import javax.jdo.PersistenceManager;
@@ -11,8 +9,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.apache.james.mime4j.message.Message;
 
 import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.email.PersistentEmail;
@@ -26,13 +22,7 @@ import com.google.wave.extensions.emaily.email.PersistentEmail;
 @Singleton
 public class IncomingEmailServlet extends HttpServlet {
 
-  private Logger logger;
-
-  /**
-   * Accumulates the emails until we get an opportunity to send them to the Wave
-   * server. This is a workaround until we get the active Wave API.
-   */
-  private List<Message> emails = new ArrayList<Message>();
+  private Logger logger = Logger.getLogger(IncomingEmailServlet.class.getName());
 
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp)
@@ -58,6 +48,7 @@ public class IncomingEmailServlet extends HttpServlet {
    * @throws IOException
    */
   public void processIncomingEmail(HttpServletRequest req) throws IOException {
+    logger.info("Receiving incoming email");
     byte[] data = PersistentEmail.readInputStream(req.getInputStream());
     PersistenceManager pm = PMF.get().getPersistenceManager();
     try {
