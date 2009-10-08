@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import javax.jdo.PersistenceManager;
+import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.Query;
 
 import org.apache.james.mime4j.field.address.Address;
@@ -39,14 +40,17 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   // Injected dependencies
   private final EmailAddressUtil emailAddressUtil;
   private final EmailSender emailSender;
+  private final PersistenceManagerFactory pmFactory;
+
   private DebugHelper debugHelper;
   private Logger logger = Logger.getLogger(EmailyRobotServlet.class.getName());
 
   @Inject
   public EmailyRobotServlet(EmailAddressUtil emailAddressUtil,
-      EmailSender emailSender) {
+      EmailSender emailSender, PersistenceManagerFactory pmFactory) {
     this.emailAddressUtil = emailAddressUtil;
     this.emailSender = emailSender;
+    this.pmFactory = pmFactory;
   }
 
   /**
@@ -119,7 +123,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * @param wavelet Handle to create new waves.
    */
   private void processIncomingEmails(Wavelet wavelet) {
-    PersistenceManager pm = PMF.get().getPersistenceManager();
+    PersistenceManager pm = pmFactory.getPersistenceManager();
     try {
       Query query = pm.newQuery(PersistentEmail.class);
       List<PersistentEmail> emails = (List<PersistentEmail>) query.execute();
@@ -149,6 +153,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     List<String> participants = new ArrayList<String>();
     participants.add(APPSPOT_ID + "@appspot.com");
     if (message.getTo() != null) {
+      // TODO(taton) The recipient should be inferred from the HTTP url.
       for (Address to : message.getTo()) {
         if (to instanceof Mailbox) {
           Mailbox mailbox = (Mailbox) to;
@@ -163,12 +168,14 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     if (participants.size() == 1) {
       logger.warning("Incoming email has no valid wave destination.");
       // For debugging, redirect the message to us.
+      // TODO(taton) Remove this before the release.
       participants.add("christophe.taton@wavesandbox.com");
     }
     Wavelet newWavelet = wavelet.createWavelet(participants, null);
     newWavelet.setTitle(message.getSubject());
     Blip blip = newWavelet.getRootBlip();
     TextView textView = blip.getDocument();
+    // TODO(taton) Use the proper Emaily address.
     textView.setAuthor(APPSPOT_ID + "@appspot.com");
 
     if (message.getFrom() != null) {
