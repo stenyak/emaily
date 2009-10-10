@@ -39,7 +39,7 @@ public class EmailSender {
       Transport.send(msg);
     } catch (MessagingException e) {
       // TODO(dlux): Need to add better error handling here.
-      throw new RuntimeException("Cannot send email", e);
+      throw new RuntimeException("Cannot send email from: " + from + ", to:" + recipient, e);
     }
   }
 }

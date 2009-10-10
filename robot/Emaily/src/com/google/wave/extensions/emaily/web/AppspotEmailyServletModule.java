@@ -1,6 +1,7 @@
-package com.google.wave.extensions.emaily.config;
+package com.google.wave.extensions.emaily.web;
 
-import com.google.inject.servlet.ServletModule;
+import com.google.wave.extensions.emaily.config.AppspotHostingProvider;
+import com.google.wave.extensions.emaily.config.HostingProvider;
 import com.google.wave.extensions.emaily.robot.IncomingEmailServlet;
 
 /**
@@ -10,9 +11,10 @@ import com.google.wave.extensions.emaily.robot.IncomingEmailServlet;
  * @author dlux
  * 
  */
-public class AppspotHostingProviderModule extends ServletModule {
+public class AppspotEmailyServletModule extends EmailyServletModule {
   @Override
   protected void configureServlets() {
+    super.configureServlets();
     serve("/_ah/mail/*").with(IncomingEmailServlet.class);
     bind(HostingProvider.class).to(AppspotHostingProvider.class);
   }

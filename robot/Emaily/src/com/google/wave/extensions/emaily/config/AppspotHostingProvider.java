@@ -45,9 +45,9 @@ public class AppspotHostingProvider implements HostingProvider {
         Document appengineXml = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(
             appengineXmlInputStream);
         XPath xPath = XPathFactory.newInstance().newXPath();
-        appName = (String) xPath.compile("//*[local_name()='application']").evaluate(appengineXml,
+        appName = (String) xPath.compile("//*[local-name()='application']").evaluate(appengineXml,
             XPathConstants.STRING);
-        appVersion = (String) xPath.compile("//*[local_nam,e()='version']").evaluate(appengineXml,
+        appVersion = (String) xPath.compile("//*[local-name()='version']").evaluate(appengineXml,
             XPathConstants.STRING);
         logger.info("AppEngineHostingProvider initialized. AppName: " + appName + ", AppVersion: "
             + appVersion);
@@ -72,7 +72,8 @@ public class AppspotHostingProvider implements HostingProvider {
     email.append(waveParticipantId.substring(0, at)).append('+').append(
         waveParticipantId.substring(at + 1)).append('@');
     if (!appVersion.equals(emailyConfig.get(PROD_VERSION))) {
-      email.append(appVersion).append(".latest.");
+      // TODO(dlux): this is currently not working...
+      // email.append(appVersion).append(".latest.");
     }
     email.append(appName).append(".appspotmail.com");
     return email.toString();
