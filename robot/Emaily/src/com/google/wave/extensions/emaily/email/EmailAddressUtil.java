@@ -33,27 +33,4 @@ public class EmailAddressUtil {
     }
     return m.group(1) + "@" + m.group(2);
   }
-
-  /**
-   * Encodes a wave id or email address to emaily domain.
-   * <p>
-   * Example:
-   * <code>
-   *   test1.example.com -> emaily-wave+test1+example.com@appspot.com
-   * </code>
-   * 
-   * @param data The email address or wave id to encode. It requires to be a
-   *          full email address or a full wave id with a domain, and must not
-   *          contain any more information (name, etc.), besides the pure
-   *          address.
-   * @return A wave participant Id.
-   */
-  public String encodeToEmailyDomain(String data) {
-    int at = data.lastIndexOf('@');
-    if (at < 0) {
-      throw new RuntimeException("Invalid email address: " + data);
-    }
-    return "emaily-wave+" + data.substring(0, at) + "+"
-        + data.substring(at + 1) + "@appspot.com";
-  }
 }

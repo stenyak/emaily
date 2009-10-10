@@ -1,4 +1,4 @@
-package com.google.wave.extensions.emaily;
+package com.google.wave.extensions.emaily.config;
 
 import java.util.Properties;
 
@@ -15,20 +15,20 @@ import com.google.inject.name.Named;
 @Singleton
 public class EmailyConfig {
   // Constants for property names
-  public static final String APPENGINE_APP_NAME = "appengine.app_name";
-  public static final String APPENGINE_APP_VERSION = "appengine.app_version";
+  public static final String HOSTING_PROVIDER_MODULE = "hosting.provider_module";
 
   private Properties properties;
-  
+
   @Inject
   EmailyConfig(@Named("ServletProperties") Properties properties) {
     this.properties = properties;
   }
-  
+
+  // Get properties
   public String get(String key) {
     return properties.getProperty(key);
   }
-  
+
   public String get(String key, String defaultValue) {
     return properties.getProperty(key, defaultValue);
   }

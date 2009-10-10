@@ -3,7 +3,13 @@ package com.google.wave.extensions.emaily.robot;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.wave.api.AbstractRobotServlet;
 import com.google.wave.api.Annotation;
@@ -13,8 +19,10 @@ import com.google.wave.api.EventType;
 import com.google.wave.api.Range;
 import com.google.wave.api.RobotMessageBundle;
 import com.google.wave.api.TextView;
+import com.google.wave.extensions.emaily.config.HostingProvider;
 import com.google.wave.extensions.emaily.email.EmailAddressUtil;
 import com.google.wave.extensions.emaily.email.EmailSender;
+import com.google.wave.extensions.emaily.util.WaveUtil;
 
 @Singleton
 public class EmailyRobotServlet extends AbstractRobotServlet {
@@ -23,12 +31,18 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   // Injected dependencies
   private final EmailAddressUtil emailAddressUtil;
   private final EmailSender emailSender;
+  private HostingProvider hostingProvider;
+  private final Provider<HttpServletRequest> reqProvider;
+  private final WaveUtil waveUtil;
 
   @Inject
-  public EmailyRobotServlet(EmailAddressUtil emailAddressUtil,
-      EmailSender emailSender) {
+  public EmailyRobotServlet(EmailAddressUtil emailAddressUtil, EmailSender emailSender,
+      HostingProvider hostingProvider, Provider<HttpServletRequest> reqProvider, WaveUtil waveUtil) {
     this.emailAddressUtil = emailAddressUtil;
     this.emailSender = emailSender;
+    this.hostingProvider = hostingProvider;
+    this.reqProvider = reqProvider;
+    this.waveUtil = waveUtil;
   }
 
   /**
@@ -56,8 +70,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     TextView rootTextView = rootBlip.getDocument();
     String emailSubject;
     String rootBody;
-    List<Annotation> titleAnnotations = rootTextView
-        .getAnnotations("conv/title");
+    List<Annotation> titleAnnotations = rootTextView.getAnnotations("conv/title");
     if (titleAnnotations.size() > 0) {
       Range subjectRange = titleAnnotations.get(0).getRange();
       emailSubject = rootTextView.getText().substring(0, subjectRange.getEnd());
@@ -66,8 +79,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       emailSubject = "";
       rootBody = rootTextView.getText();
     }
-    boolean isRootBlip = event.getBlip().getBlipId().equals(
-        bundle.getWavelet().getRootBlipId());
+    boolean isRootBlip = event.getBlip().getBlipId().equals(bundle.getWavelet().getRootBlipId());
     String emailBody;
     if (isRootBlip) {
       emailBody = rootBody;
@@ -75,23 +87,20 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       emailBody = event.getBlip().getDocument().getText();
     }
 
-    // Get sender email addresses.
-    String senderEmail = emailAddressUtil.encodeToEmailyDomain(
-        event.getBlip().getCreator());
+    // Get sender email addresses
+    String senderEmail = hostingProvider.getEmailAddressForWaveParticipantIdInEmailyDomain(event
+        .getBlip().getCreator());
 
-    // Get recipients
-    List<String> recipients = new ArrayList<String>();
-    for (String participant : bundle.getWavelet().getParticipants()) {
-      String emailAddress = emailAddressUtil.decodeFromEmailyDomain(
-          participant);
-      if (emailAddress != null) {
-        recipients.add(emailAddress);
-      }
-    }
-    if (recipients.size() > 0) {
-      emailSender.simpleSendTextEmail(senderEmail, recipients, emailSubject,
-          emailBody);
+    // Get recipient address
+    JSONObject json = waveUtil.getJsonObjectFromRequest(reqProvider.get());
+    try {
+      String proxyingFor = json.getString("proxyingFor");
+      String recipient = hostingProvider.getEmailAddressFromRobotProxyFor(proxyingFor);
+      emailSender.simpleSendTextEmail(senderEmail, recipient, emailSubject, emailBody);
+    } catch (JSONException e) {
+      throw new RuntimeException("JSON error", e);
     }
   }
 
+  
 }
