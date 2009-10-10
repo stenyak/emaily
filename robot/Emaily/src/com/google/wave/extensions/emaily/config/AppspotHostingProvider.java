@@ -18,6 +18,12 @@ import org.xml.sax.SAXException;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
+/**
+ * Hosting provider for AppEngine (appspot.com).
+ * 
+ * @author dlux
+ * 
+ */
 @Singleton
 public class AppspotHostingProvider implements HostingProvider {
   private static final String PROD_VERSION = "hosting.appspot.prod_version";
@@ -36,6 +42,9 @@ public class AppspotHostingProvider implements HostingProvider {
     readConfiguration();
   }
 
+  /**
+   * Reads the appengine-specific configuration options from appengine-web.xml.
+   */
   private void readConfiguration() {
     // Set AppEngine properties from appengine-web.xml
     InputStream appengineXmlInputStream = servletContext
@@ -62,7 +71,7 @@ public class AppspotHostingProvider implements HostingProvider {
       }
     }
   }
-  
+
   public String getEmailAddressForWaveParticipantIdInEmailyDomain(String waveParticipantId) {
     int at = waveParticipantId.lastIndexOf('@');
     if (at < 0) {

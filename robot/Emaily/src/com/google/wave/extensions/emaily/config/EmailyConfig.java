@@ -14,9 +14,6 @@ import com.google.inject.name.Named;
  */
 @Singleton
 public class EmailyConfig {
-  // Constants for property names
-  public static final String HOSTING_PROVIDER_MODULE = "hosting.provider_module";
-
   private Properties properties;
 
   @Inject
@@ -24,11 +21,10 @@ public class EmailyConfig {
     this.properties = properties;
   }
 
-  // Get properties
   public String get(String key) {
     return properties.getProperty(key);
   }
-
+ 
   public String get(String key, String defaultValue) {
     return properties.getProperty(key, defaultValue);
   }
