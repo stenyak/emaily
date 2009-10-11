@@ -49,26 +49,24 @@ public class AppspotHostingProvider implements HostingProvider {
     // Set AppEngine properties from appengine-web.xml
     InputStream appengineXmlInputStream = servletContext
         .getResourceAsStream("/WEB-INF/appengine-web.xml");
-    if (appengineXmlInputStream != null) {
-      try {
-        Document appengineXml = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(
-            appengineXmlInputStream);
-        XPath xPath = XPathFactory.newInstance().newXPath();
-        appName = (String) xPath.compile("//*[local-name()='application']").evaluate(appengineXml,
-            XPathConstants.STRING);
-        appVersion = (String) xPath.compile("//*[local-name()='version']").evaluate(appengineXml,
-            XPathConstants.STRING);
-        logger.info("AppEngineHostingProvider initialized. AppName: " + appName + ", AppVersion: "
-            + appVersion);
-      } catch (SAXException e) {
-        throw new RuntimeException("Cannot parse appengine-web.xml", e);
-      } catch (IOException e) {
-        throw new RuntimeException("Error reading appengine-web.xml", e);
-      } catch (ParserConfigurationException e) {
-        throw new RuntimeException("Error during XML parsing", e);
-      } catch (XPathExpressionException e) {
-        throw new RuntimeException("Error during XML parsing", e);
-      }
+    try {
+      Document appengineXml = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(
+          appengineXmlInputStream);
+      XPath xPath = XPathFactory.newInstance().newXPath();
+      appName = (String) xPath.compile("//*[local-name()='application']").evaluate(appengineXml,
+          XPathConstants.STRING);
+      appVersion = (String) xPath.compile("//*[local-name()='version']").evaluate(appengineXml,
+          XPathConstants.STRING);
+      logger.info("AppEngineHostingProvider initialized. AppName: " + appName + ", AppVersion: "
+          + appVersion);
+    } catch (SAXException e) {
+      throw new RuntimeException("Cannot parse appengine-web.xml", e);
+    } catch (IOException e) {
+      throw new RuntimeException("Error reading appengine-web.xml", e);
+    } catch (ParserConfigurationException e) {
+      throw new RuntimeException("Error during XML parsing", e);
+    } catch (XPathExpressionException e) {
+      throw new RuntimeException("Error during XML parsing", e);
     }
   }
 
