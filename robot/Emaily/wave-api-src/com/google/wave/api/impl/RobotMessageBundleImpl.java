@@ -50,27 +50,27 @@ public class RobotMessageBundleImpl implements RobotMessageBundle {
     this.wavelets = new HashMap<Tuple<String>, Wavelet>();
   }
 
-  
+  @Override
   public boolean wasParticipantAddedToNewWave(String participantId) {
     return wasParticipantAddedToWave(participantId) && isNewWave();
   }
 
-  
+  @Override
   public boolean wasSelfAdded() {
     return !filterEventsByType(EventType.WAVELET_SELF_ADDED).isEmpty();
   }
 
-  
+  @Override
   public boolean wasSelfRemoved() {
     return !filterEventsByType(EventType.WAVELET_SELF_REMOVED).isEmpty();
   }
   
-  
+  @Override
   public boolean isNewWave() {
     return !getWavelet().getRootBlip().hasChildren();
   }
   
-  
+  @Override
   public boolean wasParticipantAddedToWave(String participantId) {
     for (Event event : getParticipantsChangedEvents()) {
       if (event.getAddedParticipants().contains(participantId)) {
@@ -80,17 +80,17 @@ public class RobotMessageBundleImpl implements RobotMessageBundle {
     return false;
   }
   
-  
+  @Override
   public List<Event> getParticipantsChangedEvents() {
     return filterEventsByType(EventType.WAVELET_PARTICIPANTS_CHANGED);
   }
   
-  
+  @Override
   public List<Event> getBlipSubmittedEvents() {
     return filterEventsByType(EventType.BLIP_SUBMITTED);
   }
 
-  
+  @Override
   public List<Event> filterEventsByType(EventType eventType) {
     List<Event> filteredEvents = new ArrayList<Event>();
     for (Event event : getEvents()) {
@@ -109,7 +109,7 @@ public class RobotMessageBundleImpl implements RobotMessageBundle {
     return operationMessageBundle;
   }
   
-  
+  @Override
   public Wavelet getWavelet() {
     if (wavelet == null) {
       WaveletData waveletData = eventMessageBundle.getWaveletData();
@@ -125,7 +125,7 @@ public class RobotMessageBundleImpl implements RobotMessageBundle {
    return eventMessageBundle.getBlipData(); 
   }
 
-  
+  @Override
   public boolean blipHasChanged(Blip blip) {
     if (blip != null) {
       for (EventData event : eventMessageBundle.getEvents()) {
@@ -139,7 +139,7 @@ public class RobotMessageBundleImpl implements RobotMessageBundle {
     return false;
   }
 
-  
+  @Override
   public List<Event> getEvents() {
     if (events == null) {
       events = new ArrayList<Event>();
@@ -150,18 +150,18 @@ public class RobotMessageBundleImpl implements RobotMessageBundle {
     return events;
   }
 
-  
+  @Override
   public Wavelet createWavelet(List<String> participants) {
     return createWavelet(participants, null);
   }
 
-  
+  @Override
   @Deprecated
   public Wavelet createWavelet(List<String> participants, String annotationWriteBack) {
     return getWavelet().createWavelet(participants, annotationWriteBack);
   }
 
-  
+  @Override
   public Wavelet getWavelet(String waveId, String waveletId) {
     Tuple<String> key = Tuple.of(waveId, waveletId);
     Wavelet result = wavelets.get(key);
@@ -181,7 +181,7 @@ public class RobotMessageBundleImpl implements RobotMessageBundle {
     return result;
   }
 
-  
+  @Override
   public Blip getBlip(String waveId, String waveletId, String blipId) {
     Tuple<String> key = Tuple.of(waveId, waveletId, blipId);
     Blip blip = blips.get(key);
@@ -199,7 +199,7 @@ public class RobotMessageBundleImpl implements RobotMessageBundle {
     return blip;
   }
   
-  
+  @Override
   public String getRobotAddress() {
     return robotAddress;
   }
