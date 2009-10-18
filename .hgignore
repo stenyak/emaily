@@ -1,4 +1,5 @@
 \.svn
 \.swp$
+\.orig$
 eclipse-workspace
 WEB-INF/classes/.*\.class$
