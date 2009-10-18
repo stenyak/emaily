@@ -47,11 +47,12 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
 
   @Inject
   public EmailyRobotServlet(EmailSender emailSender, HostingProvider hostingProvider,
-      Provider<HttpServletRequest> reqProvider, PersistenceManagerFactory pmFactory) {
+      Provider<HttpServletRequest> reqProvider, PersistenceManagerFactory pmFactory, Logger logger) {
     this.emailSender = emailSender;
     this.hostingProvider = hostingProvider;
     this.reqProvider = reqProvider;
     this.pmFactory = pmFactory;
+    this.logger = logger;
   }
 
   /**
@@ -115,7 +116,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * @param wavelet Handle to create new waves.
    */
   // TODO(taton): Eliminate these @SuppressWarnings
-  @SuppressWarnings({ "unchecked", "unused" })
+  @SuppressWarnings( { "unchecked", "unused" })
   private void processIncomingEmails(Wavelet wavelet) {
     PersistenceManager pm = pmFactory.getPersistenceManager();
     try {
@@ -152,12 +153,12 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       for (Address to : message.getTo()) {
         if (to instanceof Mailbox) {
           Mailbox mailbox = (Mailbox) to;
-          String waveAddress = hostingProvider.getEmailAddressForWaveParticipantIdInEmailyDomain(mailbox
-              .getAddress());
+          String waveAddress = hostingProvider
+              .getEmailAddressForWaveParticipantIdInEmailyDomain(mailbox.getAddress());
           participants.add(waveAddress);
         }
         // TODO(taton) Handle groups of addresses.
-      // }
+      }
     }
     if (participants.size() == 1) {
       logger.warning("Incoming email has no valid wave destination.");
