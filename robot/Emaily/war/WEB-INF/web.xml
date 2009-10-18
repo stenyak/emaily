@@ -20,7 +20,4 @@ http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
     <listener-class>com.google.wave.extensions.emaily.web.EmailyServletContextListener</listener-class>
   </listener>
 
-  <welcome-file-list>
-    <welcome-file>index.html</welcome-file>
-  </welcome-file-list>
 </web-app>

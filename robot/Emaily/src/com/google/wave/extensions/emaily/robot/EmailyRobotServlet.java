@@ -213,8 +213,4 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       textView.append(sb.toString());
     }
   }
-
-  @Inject
-  public void setDebugHelper(DebugHelper debugHelper) {
-  }
 }
