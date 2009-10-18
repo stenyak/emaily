@@ -43,8 +43,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private HostingProvider hostingProvider;
   private final Provider<HttpServletRequest> reqProvider;
   private final PersistenceManagerFactory pmFactory;
-
-  private Logger logger;
+  private final Logger logger;
 
   @Inject
   public EmailyRobotServlet(EmailSender emailSender, HostingProvider hostingProvider,
@@ -115,8 +114,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * 
    * @param wavelet Handle to create new waves.
    */
-  // TODO(taton): remove these SuppressWarnings
-  @SuppressWarnings({ "unused", "unchecked" })
+  // TODO(taton): Eliminate these @SuppressWarnings
+  @SuppressWarnings({ "unchecked", "unused" })
   private void processIncomingEmails(Wavelet wavelet) {
     PersistenceManager pm = pmFactory.getPersistenceManager();
     try {
@@ -150,15 +149,13 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     participants.add("emaily-wave@appspot.com");
     if (message.getTo() != null) {
       // TODO(taton) The recipient should be inferred from the HTTP url.
-      // for (Address to : message.getTo()) {
-        // TODO(taton): It has to be done some other way anyway
-        // if (to instanceof Mailbox) {
-          // Mailbox mailbox = (Mailbox) to;
-          // String waveAddress = emailAddressUtil.decodeFromEmailyDomain(mailbox
-          //     .getAddress());
-          // if (waveAddress != null)
-          //  participants.add(waveAddress);
-        // }
+      for (Address to : message.getTo()) {
+        if (to instanceof Mailbox) {
+          Mailbox mailbox = (Mailbox) to;
+          String waveAddress = hostingProvider.getEmailAddressForWaveParticipantIdInEmailyDomain(mailbox
+              .getAddress());
+          participants.add(waveAddress);
+        }
         // TODO(taton) Handle groups of addresses.
       // }
     }
@@ -212,9 +209,5 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       sb.append("\n");
       textView.append(sb.toString());
     }
-  }
-
-  @Inject
-  public void setDebugHelper(DebugHelper debugHelper) {
   }
 }

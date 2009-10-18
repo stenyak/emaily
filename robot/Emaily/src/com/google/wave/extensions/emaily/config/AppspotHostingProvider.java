@@ -67,4 +67,19 @@ public class AppspotHostingProvider implements HostingProvider {
     }
     return proxyingFor.substring(0, at) + '@' + proxyingFor.substring(at + 1);
   }
+
+  public String getRobotWaveParticipantIdFromEmailAddress(String email) {
+    int at = email.lastIndexOf('@');
+    if (at < 0) {
+      throw new RuntimeException("Invalid email address: " + email);
+    }
+    StringBuilder waveParticipantId = new StringBuilder();
+    waveParticipantId.append(email.substring(0, at)).append('+').append(email.substring(at + 1))
+        .append('@');
+    if (!appVersion.equals(emailyConfig.get(PROD_VERSION))) {
+      waveParticipantId.append(appVersion).append(".latest.");
+    }
+    waveParticipantId.append(appName).append(".appspot.com");
+    return waveParticipantId.toString();
+  }
 }

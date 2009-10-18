@@ -38,11 +38,13 @@ public class EmailyServletModule extends ServletModule {
   }
 
   @Provides
+  @Singleton
   @Named("ServletProperties")
   public Properties getServletProperties() {
     return servletProperties;
   }
-
+  
+  // PersistenceManager
   @Provides @Singleton
   public PersistenceManagerFactory getPersistenceManagerFactory() {
     return JDOHelper.getPersistenceManagerFactory("transactions-optional");

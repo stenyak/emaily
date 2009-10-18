@@ -26,4 +26,11 @@ public interface HostingProvider {
    *         returns null if it is not an email address.
    */
   public String getEmailAddressFromRobotProxyFor(String proxyingFor);
+  
+  /**
+   * Returns a Robot wave Id to proxy for a given email address.
+   * @param email The email address.
+   * @return The wave Id which is proxying for that email address.
+   */
+  public String getRobotWaveParticipantIdFromEmailAddress(String email);
 }
