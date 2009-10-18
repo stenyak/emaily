@@ -1,7 +1,5 @@
 package com.google.wave.extensions.emaily.robot;
 
-import static com.google.wave.extensions.emaily.robot.EmailyProfileServlet.APPSPOT_ID;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -9,13 +7,17 @@ import java.util.logging.Logger;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.Query;
+import javax.servlet.http.HttpServletRequest;
 
 import org.apache.james.mime4j.field.address.Address;
 import org.apache.james.mime4j.field.address.Mailbox;
 import org.apache.james.mime4j.message.Message;
 import org.apache.james.mime4j.parser.MimeEntityConfig;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.wave.api.AbstractRobotServlet;
 import com.google.wave.api.Annotation;
@@ -28,28 +30,28 @@ import com.google.wave.api.StyleType;
 import com.google.wave.api.StyledText;
 import com.google.wave.api.TextView;
 import com.google.wave.api.Wavelet;
-import com.google.wave.extensions.emaily.email.EmailAddressUtil;
+import com.google.wave.extensions.emaily.config.HostingProvider;
 import com.google.wave.extensions.emaily.email.EmailSender;
 import com.google.wave.extensions.emaily.email.MailUtil;
 import com.google.wave.extensions.emaily.email.PersistentEmail;
 
+@SuppressWarnings("serial")
 @Singleton
 public class EmailyRobotServlet extends AbstractRobotServlet {
-  private static final long serialVersionUID = 8878209094937861353L;
-
   // Injected dependencies
-  private final EmailAddressUtil emailAddressUtil;
   private final EmailSender emailSender;
+  private HostingProvider hostingProvider;
+  private final Provider<HttpServletRequest> reqProvider;
   private final PersistenceManagerFactory pmFactory;
 
-  private DebugHelper debugHelper;
-  private Logger logger = Logger.getLogger(EmailyRobotServlet.class.getName());
+  private Logger logger;
 
   @Inject
-  public EmailyRobotServlet(EmailAddressUtil emailAddressUtil,
-      EmailSender emailSender, PersistenceManagerFactory pmFactory) {
-    this.emailAddressUtil = emailAddressUtil;
+  public EmailyRobotServlet(EmailSender emailSender, HostingProvider hostingProvider,
+      Provider<HttpServletRequest> reqProvider, PersistenceManagerFactory pmFactory) {
     this.emailSender = emailSender;
+    this.hostingProvider = hostingProvider;
+    this.reqProvider = reqProvider;
     this.pmFactory = pmFactory;
   }
 
@@ -73,46 +75,37 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * @param event The BLIP_SUBMITTED event.
    */
   private void handleBlipSubmitted(RobotMessageBundle bundle, Event event) {
-    // Find Email Subject
-    Blip rootBlip = bundle.getWavelet().getRootBlip();
-    TextView rootTextView = rootBlip.getDocument();
-    String emailSubject;
-    String rootBody;
-    List<Annotation> titleAnnotations = rootTextView
-        .getAnnotations("conv/title");
-    if (titleAnnotations.size() > 0) {
-      Range subjectRange = titleAnnotations.get(0).getRange();
-      emailSubject = rootTextView.getText().substring(0, subjectRange.getEnd());
-      rootBody = rootTextView.getText().substring(subjectRange.getEnd());
-    } else {
-      emailSubject = "";
-      rootBody = rootTextView.getText();
-    }
-    boolean isRootBlip = event.getBlip().getBlipId().equals(
-        bundle.getWavelet().getRootBlipId());
+    // Get subject
+    String emailSubject = bundle.getWavelet().getTitle();
+
+    // Get body
     String emailBody;
+    TextView textView = event.getBlip().getDocument();
+    boolean isRootBlip = event.getBlip().getBlipId().equals(bundle.getWavelet().getRootBlipId());
     if (isRootBlip) {
-      emailBody = rootBody;
-    } else {
-      emailBody = event.getBlip().getDocument().getText();
-    }
-
-    // Get sender email addresses.
-    String senderEmail = emailAddressUtil.encodeToEmailyDomain(event.getBlip()
-        .getCreator());
-
-    // Get recipients
-    List<String> recipients = new ArrayList<String>();
-    for (String participant : bundle.getWavelet().getParticipants()) {
-      String emailAddress = emailAddressUtil
-          .decodeFromEmailyDomain(participant);
-      if (emailAddress != null) {
-        recipients.add(emailAddress);
+      List<Annotation> titleAnnotations = textView.getAnnotations("conv/title");
+      if (titleAnnotations.size() > 0) {
+        Range subjectRange = titleAnnotations.get(0).getRange();
+        emailBody = textView.getText().substring(subjectRange.getEnd());
+      } else {
+        emailBody = textView.getText();
       }
+    } else {
+      emailBody = textView.getText();
     }
-    if (recipients.size() > 0) {
-      emailSender.simpleSendTextEmail(senderEmail, recipients, emailSubject,
-          emailBody);
+
+    // Get sender email addresses
+    String senderEmail = hostingProvider.getEmailAddressForWaveParticipantIdInEmailyDomain(event
+        .getBlip().getCreator());
+
+    // Get recipient address
+    JSONObject json = (JSONObject) reqProvider.get().getAttribute("jsonObject");
+    try {
+      String proxyingFor = json.getString("proxyingFor");
+      String recipient = hostingProvider.getEmailAddressFromRobotProxyFor(proxyingFor);
+      emailSender.simpleSendTextEmail(senderEmail, recipient, emailSubject, emailBody);
+    } catch (JSONException e) {
+      throw new RuntimeException("JSON error", e);
     }
   }
 
@@ -122,6 +115,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * 
    * @param wavelet Handle to create new waves.
    */
+  // TODO(taton): remove these SuppressWarnings
+  @SuppressWarnings({ "unused", "unchecked" })
   private void processIncomingEmails(Wavelet wavelet) {
     PersistenceManager pm = pmFactory.getPersistenceManager();
     try {
@@ -151,19 +146,21 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    */
   private void createWaveFromMessage(Wavelet wavelet, Message message) {
     List<String> participants = new ArrayList<String>();
-    participants.add(APPSPOT_ID + "@appspot.com");
+    // TODO(taton): this has to be solved some other way anyway
+    participants.add("emaily-wave@appspot.com");
     if (message.getTo() != null) {
       // TODO(taton) The recipient should be inferred from the HTTP url.
-      for (Address to : message.getTo()) {
-        if (to instanceof Mailbox) {
-          Mailbox mailbox = (Mailbox) to;
-          String waveAddress = emailAddressUtil.decodeFromEmailyDomain(mailbox
-              .getAddress());
-          if (waveAddress != null)
-            participants.add(waveAddress);
-        }
+      // for (Address to : message.getTo()) {
+        // TODO(taton): It has to be done some other way anyway
+        // if (to instanceof Mailbox) {
+          // Mailbox mailbox = (Mailbox) to;
+          // String waveAddress = emailAddressUtil.decodeFromEmailyDomain(mailbox
+          //     .getAddress());
+          // if (waveAddress != null)
+          //  participants.add(waveAddress);
+        // }
         // TODO(taton) Handle groups of addresses.
-      }
+      // }
     }
     if (participants.size() == 1) {
       logger.warning("Incoming email has no valid wave destination.");
@@ -176,7 +173,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     Blip blip = newWavelet.getRootBlip();
     TextView textView = blip.getDocument();
     // TODO(taton) Use the proper Emaily address.
-    textView.setAuthor(APPSPOT_ID + "@appspot.com");
+    textView.setAuthor("emaily-wave@appspot.com");
 
     if (message.getFrom() != null) {
       // Note: appendStyledText has a bug: the style does not apply to the
@@ -219,6 +216,5 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
 
   @Inject
   public void setDebugHelper(DebugHelper debugHelper) {
-    this.debugHelper = debugHelper;
   }
 }
