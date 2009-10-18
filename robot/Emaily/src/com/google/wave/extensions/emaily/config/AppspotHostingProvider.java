@@ -1,20 +1,9 @@
 package com.google.wave.extensions.emaily.config;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.util.StringTokenizer;
 import java.util.logging.Logger;
 
-import javax.servlet.ServletContext;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
-
+import com.google.apphosting.api.ApiProxy;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -29,47 +18,31 @@ public class AppspotHostingProvider implements HostingProvider {
   private static final String PROD_VERSION = "hosting.appspot.prod_version";
 
   private final Logger logger;
-  private final ServletContext servletContext;
   private final EmailyConfig emailyConfig;
   private String appName;
   private String appVersion;
 
   @Inject
-  AppspotHostingProvider(ServletContext servletContext, EmailyConfig emailyConfig, Logger logger) {
-    this.servletContext = servletContext;
+  AppspotHostingProvider(EmailyConfig emailyConfig, Logger logger) {
     this.emailyConfig = emailyConfig;
     this.logger = logger;
-    readConfiguration();
+    initialize();
   }
 
   /**
    * Reads the appengine-specific configuration options from appengine-web.xml.
    */
-  private void readConfiguration() {
+  private void initialize() {
     // Set AppEngine properties from appengine-web.xml
-    InputStream appengineXmlInputStream = servletContext
-        .getResourceAsStream("/WEB-INF/appengine-web.xml");
-    try {
-      Document appengineXml = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(
-          appengineXmlInputStream);
-      XPath xPath = XPathFactory.newInstance().newXPath();
-      appName = (String) xPath.compile("//*[local-name()='application']").evaluate(appengineXml,
-          XPathConstants.STRING);
-      appVersion = (String) xPath.compile("//*[local-name()='version']").evaluate(appengineXml,
-          XPathConstants.STRING);
-      logger.info("AppEngineHostingProvider initialized. AppName: " + appName + ", AppVersion: "
-          + appVersion);
-    } catch (SAXException e) {
-      throw new RuntimeException("Cannot parse appengine-web.xml", e);
-    } catch (IOException e) {
-      throw new RuntimeException("Error reading appengine-web.xml", e);
-    } catch (ParserConfigurationException e) {
-      throw new RuntimeException("Error during XML parsing", e);
-    } catch (XPathExpressionException e) {
-      throw new RuntimeException("Error during XML parsing", e);
-    }
+    appName = ApiProxy.getCurrentEnvironment().getAppId();
+    StringTokenizer versionTokenizer = new StringTokenizer(ApiProxy.getCurrentEnvironment()
+        .getVersionId(), ".", false);
+    appVersion = versionTokenizer.nextToken();
+    logger.info("AppEngineHostingProvider initialized. AppName: " + appName + ", AppVersion: "
+        + appVersion);
   }
 
+  @Override
   public String getEmailAddressForWaveParticipantIdInEmailyDomain(String waveParticipantId) {
     int at = waveParticipantId.lastIndexOf('@');
     if (at < 0) {
@@ -86,6 +59,7 @@ public class AppspotHostingProvider implements HostingProvider {
     return email.toString();
   }
 
+  @Override
   public String getEmailAddressFromRobotProxyFor(String proxyingFor) {
     int at = proxyingFor.lastIndexOf('+');
     if (at < 0) {
