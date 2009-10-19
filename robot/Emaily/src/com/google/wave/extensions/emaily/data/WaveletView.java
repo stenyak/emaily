@@ -1,8 +1,11 @@
 package com.google.wave.extensions.emaily.data;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import javax.jdo.annotations.IdentityType;
+import javax.jdo.annotations.NotPersistent;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
@@ -16,6 +19,10 @@ import javax.jdo.annotations.PrimaryKey;
  */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class WaveletView {
+  
+  @NotPersistent
+  private static final Random randomGenerator = new Random();
+  
   // The ID of this entity consists of two things: the wavelet Id and the email
   // address of the user, separated by a ' '.
   @PrimaryKey
@@ -37,13 +44,26 @@ public class WaveletView {
   @Persistent
   private Long nextSendTimestamp;  // nullable
 
+  public WaveletView(String waveletId, String email) {
+    this();
+    id = buildId(waveletId, email);
+    version = 0;
+    emailAddressToken = generateNewEmailAddressToken();
+    unsentBlips = new ArrayList<BlipVersionView>();
+    sentBlips = new ArrayList<BlipVersionView>();
+    nextSendTimestamp = null;
+  }
+
+  private WaveletView() {
+  }
+
   // Accessors for the composite primary key
   public String getWaveletId() {
-    return splitId()[0];
+    return splitId(id)[0];
   }
   
   public String getEmail() {
-    return splitId()[1];
+    return splitId(id)[1];
   }
   
   public void setWaveletId(String waveletId) {
@@ -54,9 +74,9 @@ public class WaveletView {
     setId(getWaveletId(), email);
   }
   
-  public void setId(String waveletId, String email) {
-    id = waveletId + ' ' + email;
-  } 
+  private void setId(String waveletId, String email) {
+    id = buildId(waveletId, email);
+  }
   
   // Accessors for the rest of the fields
   public long getVersion() {
@@ -99,8 +119,12 @@ public class WaveletView {
     this.nextSendTimestamp = nextSendTimestamp;
   }
 
-  // utility function: split id into two parts
-  private String[] splitId() {
+  // utility functions: split id into two parts
+  public static String buildId(String waveletId, String email) {
+    return waveletId + ' ' + email;
+  }
+
+  private static String[] splitId(String id) {
     if (id == null) {
       return new String[] { "", "" };
     }
@@ -111,5 +135,7 @@ public class WaveletView {
     return new String[] { id.substring(0, at), id.substring(at + 1) };
   }
 
-
+  private String generateNewEmailAddressToken() {
+    return Long.toString(randomGenerator.nextLong());
+  }
 }

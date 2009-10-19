@@ -61,9 +61,14 @@ public class AppspotHostingProvider implements HostingProvider {
 
   @Override
   public String getEmailAddressFromRobotProxyFor(String proxyingFor) {
+    if (proxyingFor == null) {
+      return null;
+    }
     int at = proxyingFor.lastIndexOf('+');
     if (at < 0) {
-      return null;
+      // If there is no domain in the proxyingFor, it means that it is
+      // a @gmail.com email address.
+      return proxyingFor + "@gmail.com";
     }
     return proxyingFor.substring(0, at) + '@' + proxyingFor.substring(at + 1);
   }
