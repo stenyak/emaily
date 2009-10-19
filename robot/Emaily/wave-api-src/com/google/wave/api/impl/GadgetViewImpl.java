@@ -36,15 +36,18 @@ public class GadgetViewImpl implements GadgetView {
     this.textView = textView;
   }
 
+  @Override
   public void append(Gadget gadget) {
     textView.appendElement(gadget);
   }
 
+  @Override
   public void delete(Gadget gadget) {
     textView.deleteElement(
         textView.getPosition(gadget));
   }
 
+  @Override
   public void delete(String url) {
     Gadget gadget = getGadget(url);
     if (gadget != null) {
@@ -52,6 +55,7 @@ public class GadgetViewImpl implements GadgetView {
     }
   }
 
+  @Override
   public Gadget getGadget(String url) {
     for (Element element : textView.getElements()) {
       if (element.isGadget() &&
@@ -63,6 +67,7 @@ public class GadgetViewImpl implements GadgetView {
     return null;
   }
 
+  @Override
   public List<Gadget> getGadgets() {
     List<Gadget> gadgets = new ArrayList<Gadget>();
     for (Element element : textView.getElements()) {
@@ -73,10 +78,12 @@ public class GadgetViewImpl implements GadgetView {
     return gadgets;
   }
 
+  @Override
   public void insertAfter(Gadget after, Gadget gadget) {
     textView.insertElement(textView.getPosition(after) + 1, gadget);
   }
 
+  @Override
   public void insertAfter(String url, Gadget gadget) {
     Gadget after = getGadget(url);
     if (after != null) {
@@ -84,22 +91,27 @@ public class GadgetViewImpl implements GadgetView {
     }
   }
 
+  @Override
   public void insertBefore(Gadget before, Gadget gadget) {
     textView.insertElement(textView.getPosition(before), gadget);
   }
 
+  @Override
   public void insertBefore(String url, Gadget gadget) {
     textView.insertElement(textView.getPosition(getGadget(url)), gadget);
   }
 
+  @Override
   public void replace(Gadget gadget) {
     textView.replaceElement(textView.getPosition(getGadget(gadget.getUrl())), gadget);
   }
 
+  @Override
   public void replace(Gadget toReplace, Gadget replaceWith) {
     textView.replaceElement(textView.getPosition(toReplace), replaceWith);
   }
 
+  @Override
   public void replace(String url, Gadget gadget) {
     textView.replaceElement(textView.getPosition(getGadget(url)), gadget);
   }

@@ -15,17 +15,18 @@
 
 package com.google.wave.api.impl;
 
-import java.util.Map;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import com.google.wave.api.EventType;
+
 import com.metaparadigm.jsonrpc.AbstractSerializer;
 import com.metaparadigm.jsonrpc.MarshallException;
 import com.metaparadigm.jsonrpc.ObjectMatch;
 import com.metaparadigm.jsonrpc.SerializerState;
 import com.metaparadigm.jsonrpc.UnmarshallException;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Map;
 
 /**
  * JSON Serializer for EventData.
@@ -38,17 +39,17 @@ public class EventDataSerializer extends AbstractSerializer {
   private static final Class[] SERIALIZABLE_CLASSES = new Class[] { EventData.class };
   private static final Class[] JSON_CLASSES = new Class[] { JSONObject.class };
 
-  
+  @Override
   public Class[] getJSONClasses() {
     return JSON_CLASSES;
   }
 
-  
+  @Override
   public Class[] getSerializableClasses() {
     return SERIALIZABLE_CLASSES;
   }
 
-  
+  @Override
   public Object marshall(SerializerState state, Object o) throws MarshallException {
     if (!(o instanceof EventData)) {
       throw new MarshallException("Object is not of type Event.");
@@ -69,12 +70,14 @@ public class EventDataSerializer extends AbstractSerializer {
     return json;
   }
 
+  @SuppressWarnings("unused")
+  @Override
   public ObjectMatch tryUnmarshall(SerializerState state, Class clazz, Object json)
       throws UnmarshallException {
     throw new UnsupportedOperationException();
   }
 
-  
+  @Override
   public Object unmarshall(SerializerState state, Class clazz, Object json)
       throws UnmarshallException {
     if (!EventData.class.isAssignableFrom(clazz)) {

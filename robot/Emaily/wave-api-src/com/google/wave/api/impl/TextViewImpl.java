@@ -48,7 +48,7 @@ public class TextViewImpl implements TextView {
       return matchRange(annotation) && matchContent(annotation);
     }
     
-    public boolean matchRange(Annotation annotation) {
+    public boolean matchRange(@SuppressWarnings("unused") Annotation annotation) {
       return true;
     }
     
@@ -62,14 +62,6 @@ public class TextViewImpl implements TextView {
       this.range = range;
     }
     
-    
-    @Override
-    public boolean matchContent(Annotation annotation) {
-      // TODO Auto-generated method stub
-      return false;
-    }
-
-
     @Override
     public boolean matchRange(Annotation ann) {
       return ann.getRange().getStart() <= range.getStart() &&
@@ -83,12 +75,13 @@ public class TextViewImpl implements TextView {
 
   private RobotMessageBundleImpl events;
 
+  @SuppressWarnings("unchecked")
   public TextViewImpl(BlipData blipData, RobotMessageBundleImpl events) {
     this.blipData = blipData;
     this.events = events;
   }
   
-  
+  @Override
   public void insert(int start, String text) {
     // Validate the starting index.
     if (start < 0 || start > blipData.getContent().length()) {
@@ -114,6 +107,7 @@ public class TextViewImpl implements TextView {
     expandOrShiftAnnotations(start, text.length());
   }
 
+  @Override
   public void append(String text) {
     if (blipData.getBlipId() != null) {
       // It's a modification to an existing blip, queue up operation.
@@ -124,6 +118,7 @@ public class TextViewImpl implements TextView {
     blipData.setContent(blipData.getContent().concat(text));
   }
   
+  @Override
   public void appendMarkup(String content) {
     if (blipData.getBlipId() != null) {
       Operation operation = new OperationImpl(OperationType.DOCUMENT_APPEND_MARKUP,
@@ -135,6 +130,7 @@ public class TextViewImpl implements TextView {
     blipData.setContent(blipData.getContent() + stripped);
   }
   
+  @Override
   public void delete(Range range) {
     int start = range.getStart();
     int end = range.getEnd();
@@ -157,6 +153,7 @@ public class TextViewImpl implements TextView {
     shrinkOrShiftAnnotations(range.getStart(), range.getEnd() - range.getStart());
   }
 
+  @Override
   public void delete() {
     events.addOperation(new OperationImpl(OperationType.DOCUMENT_DELETE, blipData.getWaveId(),
         blipData.getWaveletId(), blipData.getBlipId(), -1, null));
@@ -165,10 +162,12 @@ public class TextViewImpl implements TextView {
     blipData.getElements().clear();
   }
 
+  @Override
   public String getText() {
     return blipData.getContent();
   }
 
+  @Override
   public String getText(Range range) {
     int start = range.getStart();
     int end = range.getEnd();
@@ -178,16 +177,19 @@ public class TextViewImpl implements TextView {
     return blipData.getContent().substring(start, end);
   }
 
+  @Override
   public void replace(String text) {
     delete();
     insert(0, text);
   }
 
+  @Override
   public void replace(Range range, String text) {
     delete(range);
     insert(range.getStart(), text);
   }
 
+  @Override
   public void appendStyledText(StyledText styledText) {
     if (blipData.getBlipId() != null) {
       Operation operation = new OperationImpl(OperationType.DOCUMENT_APPEND_STYLED_TEXT,
@@ -210,7 +212,7 @@ public class TextViewImpl implements TextView {
     }
   }
 
-  
+  @Override
   public void insertStyledText(int start, StyledText styledText) {
     insert(start, styledText.getText());
     Range range = new Range(start, start + styledText.getText().length());
@@ -219,26 +221,27 @@ public class TextViewImpl implements TextView {
     }
   }
 
-  
+  @Override
   public void replaceStyledText(Range range, StyledText styledText) {
     delete(range);
     insertStyledText(range.getStart(), styledText);
   }
 
-  
+  @Override
   public void replaceStyledText(StyledText styledText) {
     delete();
     insertStyledText(0, styledText);
   }
   
+  @SuppressWarnings("unchecked")
+  @Override
   public List<Annotation> getAnnotations() {
     return blipData.getAnnotations();
   }
 
-  
+  @Override
   public List<Annotation> getStyles() {
     return getAnnotations(new AnnotationMatcher() {
-      
       @Override
       public boolean matchContent(Annotation annotation) {
         return annotation.getName().equals("styled-text");
@@ -246,17 +249,17 @@ public class TextViewImpl implements TextView {
     });
   }
 
-  
+  @Override
   public void setAnnotation(String name, String value) {
     setAnnotation(null, name, value);
   }
 
-  
+  @Override
   public void setStyle(StyleType style) {
     setAnnotation("styled-text", style.toString());
   }
   
-  
+  @Override
   public Blip appendInlineBlip() {
     BlipData inlineBlipData = new BlipData();
     inlineBlipData.setWaveId(blipData.getWaveId());
@@ -268,7 +271,7 @@ public class TextViewImpl implements TextView {
     return new BlipImpl(inlineBlipData, events);
   }
 
-  
+  @Override
   public void deleteInlineBlip(Blip blip) {
     events.addOperation(new OperationImpl(OperationType.DOCUMENT_INLINE_BLIP_DELETE, 
         blipData.getWaveId(), blipData.getWaveletId(), blipData.getBlipId(),
@@ -283,7 +286,7 @@ public class TextViewImpl implements TextView {
     }
   }
 
-  
+  @Override
   public List<Blip> getInlineBlips() {
     List<Blip> inlineBlips = new ArrayList<Blip>();
     for (Element element : blipData.getElements().values()) {
@@ -297,7 +300,7 @@ public class TextViewImpl implements TextView {
     return inlineBlips;
   }
 
-  
+  @Override
   public Blip insertInlineBlip(int start) {
     BlipData inlineBlipData = new BlipData();
     inlineBlipData.setWaveId(blipData.getWaveId());
@@ -309,10 +312,9 @@ public class TextViewImpl implements TextView {
     return new BlipImpl(inlineBlipData, events);
   }
 
-  
+  @Override
   public List<Annotation> getAnnotations(final String name) {
     return getAnnotations(new AnnotationMatcher() {
-      
       @Override
       public boolean matchContent(Annotation annotation) {
         return annotation.getName().equals(name);
@@ -320,10 +322,9 @@ public class TextViewImpl implements TextView {
     });
   }
 
-  
+  @Override
   public List<Annotation> getStyles(final StyleType style) {
     return getAnnotations(new AnnotationMatcher() {
-      
       @Override
       public boolean matchContent(Annotation annotation) {
         return annotation.getName().equals("styled-text") &&
@@ -332,10 +333,9 @@ public class TextViewImpl implements TextView {
     });
   }
 
-  
+  @Override
   public List<Annotation> getAnnotations(Range range) {
     return getAnnotations(new RangedAnnotationMatcher(range) {
-      
       @Override
       public boolean matchContent(Annotation annotation) {
         return true;
@@ -343,10 +343,9 @@ public class TextViewImpl implements TextView {
     });
   }
 
-  
+  @Override
   public List<Annotation> getAnnotations(Range range, final String name) {
     return getAnnotations(new RangedAnnotationMatcher(range) {
-      
       @Override
       public boolean matchContent(Annotation annotation) {
         return annotation.getName().equals(name);
@@ -354,10 +353,9 @@ public class TextViewImpl implements TextView {
     });
   }
 
-  
+  @Override
   public List<Annotation> getStyles(Range range) {
     return getAnnotations(new RangedAnnotationMatcher(range) {
-      
       @Override
       public boolean matchContent(Annotation annotation) {
         return annotation.getName().equals("styled-text");
@@ -365,10 +363,9 @@ public class TextViewImpl implements TextView {
     });
   }
 
-  
+  @Override
   public List<Annotation> getStyles(Range range, final StyleType style) {
     return getAnnotations(new RangedAnnotationMatcher(range) {
-      
       @Override
       public boolean matchContent(Annotation annotation) {
         return annotation.getName().equals("styled-text") &&
@@ -377,7 +374,7 @@ public class TextViewImpl implements TextView {
     });
   }
 
-  
+  @Override
   public void setAnnotation(Range range, String name, String value) {
     if (range == null) {
       events.addOperation(new OperationImpl(OperationType.DOCUMENT_ANNOTATION_SET_NORANGE,
@@ -392,12 +389,12 @@ public class TextViewImpl implements TextView {
     blipData.getAnnotations().add(new Annotation(name, value, range));
   }
 
-  
+  @Override
   public void setStyle(Range range, StyleType style) {
     setAnnotation(range, "styled-text", style.toString());
   }
 
-  
+  @Override
   public void appendElement(Element element) {
     int length = blipData.getContent().length();
     events.addOperation(new OperationImpl(OperationType.DOCUMENT_ELEMENT_APPEND,
@@ -409,7 +406,7 @@ public class TextViewImpl implements TextView {
     expandOrShiftAnnotations(length - 1, 1);
   }
 
-  
+  @Override
   public List<Element> getElements() {
     if (blipData != null && blipData.getElements() != null) {
       return new ArrayList<Element>(blipData.getElements().values());
@@ -417,7 +414,7 @@ public class TextViewImpl implements TextView {
     return null;
   }
 
-  
+  @Override
   public List<Element> getElements(Range range) {
     List<Element> elements = new ArrayList<Element>();
     for (Iterator<String> iterator = blipData.getElements().keySet().iterator();
@@ -430,7 +427,7 @@ public class TextViewImpl implements TextView {
     return elements;
   }
 
-  
+  @Override
   public FormView getFormView() {
     return new FormViewImpl(this);
   }
@@ -515,7 +512,7 @@ public class TextViewImpl implements TextView {
     }
   }
 
-  
+  @Override
   public boolean hasAnnotation(String name) {
     if (blipData != null && blipData.getAnnotations() != null) {
       for (Annotation annotation : blipData.getAnnotations()) {
@@ -527,7 +524,7 @@ public class TextViewImpl implements TextView {
     return false;
   }
 
-  
+  @Override
   public Blip insertInlineBlipAfterFormElement(FormElement formElement) {
     BlipData inlineBlipData = new BlipData();
     inlineBlipData.setWaveId(blipData.getWaveId());
@@ -540,7 +537,7 @@ public class TextViewImpl implements TextView {
     return new BlipImpl(inlineBlipData, events);
   }
 
-  
+  @Override
   public void deleteAnnotations(String name) {
     events.addOperation(new OperationImpl(OperationType.DOCUMENT_ANNOTATION_DELETE, 
         blipData.getWaveId(), blipData.getWaveletId(), blipData.getBlipId(),
@@ -555,7 +552,7 @@ public class TextViewImpl implements TextView {
     }
   }
 
-  
+  @Override
   public void deleteAnnotations(Range range) {
     events.addOperation(new OperationImpl(OperationType.DOCUMENT_ANNOTATION_DELETE, 
         blipData.getWaveId(), blipData.getWaveletId(), blipData.getBlipId(),
@@ -571,7 +568,7 @@ public class TextViewImpl implements TextView {
     }
   }
 
-  
+  @Override
   public void deleteElement(int index) {
     Element element = getElement(index);
     if (element != null) {
@@ -596,17 +593,17 @@ public class TextViewImpl implements TextView {
     }
   }
 
-  
+  @Override
   public boolean elementExists(int index) {
     return blipData.getElements().containsKey(index);
   }
 
-  
+  @Override
   public Element getElement(int index) {
     return blipData.getElements().get(Integer.toString(index));
   }
 
-  
+  @Override
   public List<Element> getElements(ElementType type) {
     List<Element> elements = new ArrayList<Element>();
     for (Element element : blipData.getElements().values()) {
@@ -617,12 +614,12 @@ public class TextViewImpl implements TextView {
     return elements;
   }
 
-  
+  @Override
   public GadgetView getGadgetView() {
     return new GadgetViewImpl(this);
   }
 
-  
+  @Override
   public int getPosition(Element element) {
     if (!blipData.getElements().containsValue(element)) {
       return -1;
@@ -635,7 +632,7 @@ public class TextViewImpl implements TextView {
     return -1;
   }
 
-  
+  @Override
   public void insertElement(int index, Element element) {
     events.addOperation(new OperationImpl(OperationType.DOCUMENT_ELEMENT_INSERT, 
         blipData.getWaveId(), blipData.getWaveletId(), blipData.getBlipId(),
@@ -681,7 +678,7 @@ public class TextViewImpl implements TextView {
     }
   }
 
-  
+  @Override
   public void replaceElement(int index, Element element) {
     events.addOperation(new OperationImpl(OperationType.DOCUMENT_ELEMENT_REPLACE, 
         blipData.getWaveId(), blipData.getWaveletId(), blipData.getBlipId(),
@@ -689,14 +686,14 @@ public class TextViewImpl implements TextView {
     blipData.getElements().put(Integer.toString(index), element);
   }
 
-  
+  @Override
   public void setAuthor(String author) {
     events.addOperation(new OperationImpl(OperationType.BLIP_SET_AUTHOR,
         blipData.getWaveId(), blipData.getWaveletId(), blipData.getBlipId(),
         -1, author));
   }
 
-  
+  @Override
   public String getAuthor() {
     List<Annotation> annotations = getAnnotations("relayedfrom");
     if (!annotations.isEmpty()) {
@@ -705,7 +702,7 @@ public class TextViewImpl implements TextView {
     return null;
   }
 
-  
+  @Override
   public void setCreationTime(long creationTime) {
     events.addOperation(new OperationImpl(OperationType.BLIP_SET_CREATION_TIME,
         blipData.getWaveId(), blipData.getWaveletId(), blipData.getBlipId(),
