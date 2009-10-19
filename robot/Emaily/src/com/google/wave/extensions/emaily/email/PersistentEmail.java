@@ -1,13 +1,18 @@
 package com.google.wave.extensions.emaily.email;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 
+import javax.jdo.annotations.IdGeneratorStrategy;
+import javax.jdo.annotations.IdentityType;
+import javax.jdo.annotations.Key;
 import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
+import javax.jdo.annotations.PrimaryKey;
+
+import com.google.appengine.api.datastore.Blob;
 
 /**
  * Persistent class to store incoming emails until we can process them and
@@ -15,58 +20,50 @@ import javax.jdo.annotations.PersistenceCapable;
  * 
  * @author taton
  */
-@PersistenceCapable
+@PersistenceCapable(identityType = IdentityType.DATASTORE)
 public class PersistentEmail implements Serializable {
 
   private static final long serialVersionUID = 8472461757525198617L;
 
-  /**
-   * Reads an InputStream into a byte array.
-   * 
-   * @param is The input stream.
-   * @return The byte array.
-   * @throws IOException
-   */
-  public static byte[] readInputStream(InputStream is) throws IOException {
-    final int BUFFER_SIZE = 1024;
-    List<byte[]> buffers = new ArrayList<byte[]>();
-    int size = 0;
-    // First read the input buffer into a list a fixed size buffers.
-    while (true) {
-      byte[] buffer = new byte[BUFFER_SIZE];
-      int bytesRead = is.read(buffer);
-      if (bytesRead == -1) // End of file
-        break;
-      size += bytesRead;
-      buffers.add(buffer);
-    }
-    // Then concatenate the buffers into a single complete byte array.
-    byte[] data = new byte[size];
-    int offset = 0;
-    int remaining = size;
-    for (byte[] buffer : buffers) {
-      int bytesToCopy = Math.min(BUFFER_SIZE, remaining);
-      System.arraycopy(buffer, 0, data, offset, bytesToCopy);
-      remaining -= bytesToCopy;
-      offset += bytesToCopy;
-    }
-    return data;
-  }
+  @PrimaryKey
+  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+  private Long id;
 
-  /** The incoming email unprocessed bytes stream. */
-  private byte[] data;
+  /** The Message-ID header. */
+  @Key
+  @Persistent
+  private String messageId;
+
+  @Persistent
+  private Set<String> waveParticipants;
+
+  /** The unprocessed email bytes stream. */
+  @Persistent
+  private Blob blob;
 
   /**
    * Creates a new Persistent email with the given byte array.
    * 
    * @param data The email content as a byte array.
    */
-  public PersistentEmail(byte[] data) {
-    this.data = data;
+  public PersistentEmail(String messageId, Set<String> waveParticipants, byte[] data) {
+    this.messageId = messageId;
+    this.waveParticipants = waveParticipants;
+    this.blob = new Blob(data);
   }
 
   /** @return An InputStream for the email content. */
   public InputStream getInputStream() {
-    return new ByteArrayInputStream(data);
+    return new ByteArrayInputStream(blob.getBytes());
   }
+
+  /** @return The email Message-ID. */
+  public String getMessageId() {
+    return this.messageId;
+  }
+
+  public Set<String> getWaveParticipants() {
+    return this.waveParticipants;
+  }
+
 }

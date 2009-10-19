@@ -26,4 +26,25 @@ public interface HostingProvider {
    *         returns null if it is not an email address.
    */
   public String getEmailAddressFromRobotProxyFor(String proxyingFor);
+
+  /**
+   * Decodes and returns the Wave participant ID from the recipient address of an incoming email.
+   * For example:
+   * "user_id+domain.com@app_id.appspotmail.com" will be decoded as "user_id@domain.com"
+   * 
+   * @param address The recipient address of the incoming email.
+   * @return The Wave participant ID.
+   */
+  public String decodeIncomingEmailAddress(String address);
+
+  /**
+   * Encodes the address of an Email participant as a proxyingFor Wave participant ID.
+   * For example:
+   * "user_id@domain.com" will be encoded as "app_id+user_id+domain.com@appspot.com".
+   * 
+   * @param address The email participant address.
+   * @return The Wave participant ID proxying for the email participant.
+   */
+  public String encodeEmailParticipantAsWaveParticipantId(String address);
+  
 }
