@@ -12,6 +12,8 @@ import com.google.wave.api.Event;
 import com.google.wave.api.EventType;
 import com.google.wave.api.RobotMessageBundle;
 import com.google.wave.api.Wavelet;
+import com.google.wave.extensions.emaily.data.BlipVersionView;
+import com.google.wave.extensions.emaily.data.WaveletView;
 
 /**
  * Utility functions for debugging Wave and Robot interactions
@@ -27,7 +29,7 @@ public class DebugHelper {
    * @param sp The StringBuilder to append info to.
    * @param bundle The RobotMessageBundle to dump.
    */
-  public static void PrintRobotMessageBundleInfo(StringBuilder sp, RobotMessageBundle bundle) {
+  public void PrintRobotMessageBundleInfo(StringBuilder sp, RobotMessageBundle bundle) {
     sp.append("RobotMessageBundle info:\n");
     sp.append("RobotAddress: ").append(bundle.getRobotAddress()).append("\n");
     sp.append("Is new wave? ").append(bundle.isNewWave()).append("\n");
@@ -45,7 +47,7 @@ public class DebugHelper {
    * @param sp The StringBuilder to append info to.
    * @param blip The Blip MessageBundle to dump.
    */
-  public static void PrintBlipInfo(StringBuilder sp, Blip blip) {
+  public void PrintBlipInfo(StringBuilder sp, Blip blip) {
     sp.append("Blip info for blip ID: ").append(blip.getBlipId()).append("\n");
     sp.append("Parent blip ID: ").append(blip.getParentBlipId()).append("\n");
     sp.append("Creator: ").append(blip.getCreator()).append("\n");
@@ -67,7 +69,7 @@ public class DebugHelper {
    * @param sp The StringBuilder to append info to.
    * @param wavelet The Wavelet to dump.
    */
-  public static void PrintWaveletInfo(StringBuilder sp, Wavelet wavelet) {
+  public void PrintWaveletInfo(StringBuilder sp, Wavelet wavelet) {
     sp.append("Wavelet info:");
     sp.append("title: ").append(wavelet.getTitle()).append("\n");
     sp.append("ID: ").append(wavelet.getWaveletId()).append("\n");
@@ -82,5 +84,18 @@ public class DebugHelper {
           .append("\n");
     sp.append("Root blip ID: ").append(wavelet.getRootBlipId()).append("\n");
   }
-
+  
+  public void PrintWaveletViewInfo(StringBuilder sb, WaveletView waveletView) {
+    sb.append("WaveletView info:\n");
+    sb.append("Wavelet Id: ").append(waveletView.getWaveletId()).append('\n');
+    sb.append("User email: ").append(waveletView.getEmail()).append('\n');
+    sb.append("Email address token: ").append(waveletView.getEmailAddressToken()).append('\n');
+    sb.append("Unsent blips: \n");
+    for (BlipVersionView b: waveletView.getUnsentBlips()) {
+      sb.append("- Blip Id:").append(b.getBlipId()).append('\n');
+      sb.append("  Blip version:").append(b.getVersion()).append('\n');
+      
+    }
+  }
 }
+  
