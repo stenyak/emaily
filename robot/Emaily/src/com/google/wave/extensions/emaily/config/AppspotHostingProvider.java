@@ -35,7 +35,7 @@ public class AppspotHostingProvider implements HostingProvider {
    * Reads the appengine-specific configuration options from appengine-web.xml.
    */
   private void initialize() {
-    emailyConfig.checkRequiredStringProperties(requiredProperties);
+    emailyConfig.checkRequiredProperties(requiredProperties);
     // Set AppEngine properties from appengine-web.xml
     appName = ApiProxy.getCurrentEnvironment().getAppId();
     StringTokenizer versionTokenizer = new StringTokenizer(ApiProxy.getCurrentEnvironment()
@@ -54,7 +54,7 @@ public class AppspotHostingProvider implements HostingProvider {
     StringBuilder email = new StringBuilder();
     email.append(waveParticipantId.substring(0, at)).append('+').append(
         waveParticipantId.substring(at + 1)).append('@');
-    if (!appVersion.equals(emailyConfig.get(PROD_VERSION))) {
+    if (!isProductionVersion()) {
       // TODO(dlux): this is currently not working...
       // email.append(appVersion).append(".latest.");
     }
@@ -69,9 +69,7 @@ public class AppspotHostingProvider implements HostingProvider {
     }
     int at = proxyingFor.lastIndexOf('+');
     if (at < 0) {
-      // If there is no domain in the proxyingFor, it means that it is
-      // a @gmail.com email address.
-      return proxyingFor + "@gmail.com";
+      return null;
     }
     return proxyingFor.substring(0, at) + '@' + proxyingFor.substring(at + 1);
   }
@@ -84,10 +82,16 @@ public class AppspotHostingProvider implements HostingProvider {
     StringBuilder waveParticipantId = new StringBuilder();
     waveParticipantId.append(email.substring(0, at)).append('+').append(email.substring(at + 1))
         .append('@');
-    if (!appVersion.equals(emailyConfig.get(PROD_VERSION))) {
+    if (!isProductionVersion()) {
       waveParticipantId.append(appVersion).append(".latest.");
     }
     waveParticipantId.append(appName).append(".appspot.com");
     return waveParticipantId.toString();
   }
+
+  @Override
+  public boolean isProductionVersion() {
+    return appVersion.equals(emailyConfig.get(PROD_VERSION));
+  }
+
 }

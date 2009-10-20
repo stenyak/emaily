@@ -21,7 +21,7 @@ public class EmailyConfig {
     this.properties = properties;
   }
 
-  public void checkRequiredStringProperties(String[] propertyNames) {
+  public void checkRequiredProperties(String[] propertyNames) {
     for (String propertyName : propertyNames) {
       if (!properties.keySet().contains(propertyName)) {
         throw new RuntimeException("Property '" + propertyName + "' is required and not defined");
@@ -30,7 +30,7 @@ public class EmailyConfig {
   }
 
   public void checkRequiredLongProperties(String[] propertyNames) {
-    checkRequiredStringProperties(propertyNames);
+    checkRequiredProperties(propertyNames);
     for (String propertyName : propertyNames) {
       try {
         Long.parseLong(properties.getProperty(propertyName));

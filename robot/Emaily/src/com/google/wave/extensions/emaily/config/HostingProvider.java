@@ -33,4 +33,10 @@ public interface HostingProvider {
    * @return The wave Id which is proxying for that email address.
    */
   public String getRobotWaveParticipantIdFromEmailAddress(String email);
+  
+  /**
+   * Returns true if the robot what is running is a production version.
+   * @return True if the currently running robot is a production version
+   */
+  public boolean isProductionVersion();
 }

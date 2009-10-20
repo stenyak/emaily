@@ -19,6 +19,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.config.EmailyConfig;
 import com.google.wave.extensions.emaily.data.BlipVersionView;
+import com.google.wave.extensions.emaily.data.WaveletView;
 
 // The basic idea on the basic sending schedule is the following:
 // - The bot should not send emails more frequently than 10 minutes.
@@ -88,19 +89,38 @@ public class EmailScheduler {
   }
 
   /**
+   * Calculates the next send operation time of the wavelet.
+   * @param waveletView The wavelet to analyze.
+   */
+  public void calculateWaveletViewNextSendTime(WaveletView waveletView) {
+    long nextActionTime = Long.MAX_VALUE;
+    for (BlipVersionView blipVersionView: waveletView.getUnsentBlips()) {
+      blipVersionView.setTimeToBecomeSendable(calculateBlipTimeToBecomeSendable(blipVersionView));
+      nextActionTime = Math.min(nextActionTime, blipVersionView.getTimeToBecomeSendable());
+    }
+    nextActionTime = Math.max(nextActionTime, waveletView.getLastEmailSentTime()
+        + config.getLong(MIN_EMAIL_SEND_TIME) * 1000);
+    waveletView.setTimeForSending(nextActionTime);
+  }
+
+  /**
    * Calculates the next email send time for a blipVersionView.
    * 
    * @param blipVersionView the blipVersionView to change
    * @return The time when the blip is going to be sendable
    */
-  public long calculateBlipTimeToBecomeSendable(BlipVersionView blipVersionView) {
+  private long calculateBlipTimeToBecomeSendable(BlipVersionView blipVersionView) {
     long sendable = Long.MAX_VALUE;
     sendable = Math.min(sendable, blipVersionView.getLastSubmittedTimestamp()
-        + config.getLong(SEND_TIME_AFTER_BLIP_SUBMIT));
+        + config.getLong(SEND_TIME_AFTER_BLIP_SUBMIT) * 1000);
     sendable = Math.min(sendable, blipVersionView.getLastChangedTimestamp()
-        + config.getLong(SEND_TIME_AFTER_BLIP_NO_EDIT));
+        + config.getLong(SEND_TIME_AFTER_BLIP_NO_EDIT) * 1000);
     sendable = Math.min(sendable, blipVersionView.getFirstEditedTimestamp()
-        + config.getLong(SEND_TIME_IF_CONSTANTLY_EDITED));
+        + config.getLong(SEND_TIME_IF_CONSTANTLY_EDITED) * 1000);
     return sendable;
+    // TODO(dlux): Add blip parent check (see description at the top) to decide
+    //   on sending a blip.
   }
+  
+
 }

@@ -49,22 +49,22 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private final Provider<HttpServletRequest> reqProvider;
   private final PersistenceManagerFactory pmFactory;
   private final Logger logger;
-  private final DataAccess dataAccess;
   private final EmailScheduler emailScheduler;
   private final DebugHelper debugHelper;
+  private final Provider<DataAccess> dataAccessProvider;
 
   @Inject
   public EmailyRobotServlet(EmailSender emailSender, HostingProvider hostingProvider,
       Provider<HttpServletRequest> reqProvider, PersistenceManagerFactory pmFactory, Logger logger,
-      DataAccess dataAccess, EmailScheduler emailScheduler, DebugHelper debugHelper) {
+      EmailScheduler emailScheduler, DebugHelper debugHelper, Provider<DataAccess> dataAccessProvider) {
     this.emailSender = emailSender;
     this.hostingProvider = hostingProvider;
     this.reqProvider = reqProvider;
     this.pmFactory = pmFactory;
     this.logger = logger;
-    this.dataAccess = dataAccess;
     this.emailScheduler = emailScheduler;
     this.debugHelper = debugHelper;
+    this.dataAccessProvider = dataAccessProvider;
   }
 
   /**
@@ -95,18 +95,18 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private void processWaveletViewModifications(RobotMessageBundle bundle, String email) {
     try {
       String waveletId = bundle.getWavelet().getWaveletId();
-      WaveletView waveletView = dataAccess.getWaveletView(waveletId, email);
+      WaveletView waveletView = dataAccessProvider.get().getWaveletView(waveletId, email);
       if (waveletView == null) {
         waveletView = new WaveletView(email, waveletId);
       }
       for (Event e : bundle.getEvents()) {
         processBlipEvent(waveletView, e);
       }
-      calculateNextSendTime(waveletView);
+      emailScheduler.calculateWaveletViewNextSendTime(waveletView);
       logger.info(debugHelper.printWaveletViewInfo(waveletView));
-      dataAccess.persistWaveletView(waveletView);
+      dataAccessProvider.get().persistWaveletView(waveletView);
     } finally {
-      dataAccess.close();
+      dataAccessProvider.get().close();
     }
   }
 
@@ -125,7 +125,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       }
     }
     // If it did not exist yet, create one:
-    if (blipVersionView != null) {
+    if (blipVersionView == null) {
       blipVersionView = new BlipVersionView();
       blipVersionView.setBlipId(blip.getBlipId());
     }
@@ -148,15 +148,6 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     emailScheduler.SetBlipViewTimes(blipVersionView, still_editing);
   }
   
-  private void calculateNextSendTime(WaveletView waveletView) {
-    long nextActionTime = Long.MAX_VALUE;
-    for (BlipVersionView blipVersionView: waveletView.getUnsentBlips()) {
-      blipVersionView.setTimeToBecomeSendable(emailScheduler.calculateBlipTimeToBecomeSendable(blipVersionView));
-      nextActionTime = Math.min(nextActionTime, blipVersionView.getTimeToBecomeSendable());
-    }
-    waveletView.setTimeForSending(nextActionTime);
-  }
-
   /**
    * Handle when a blip is submitted. Currenlty it sends the blip in email
    * immediately.

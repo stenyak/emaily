@@ -1,5 +1,6 @@
 package com.google.wave.extensions.emaily.data;
 
+import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 
@@ -20,7 +21,11 @@ public class JDODataAccess implements DataAccess {
    * {@inheritDoc}
    */
   public WaveletView getWaveletView(String waveletId, String email) {
-    return getPm().getObjectById(WaveletView.class, WaveletView.buildId(waveletId, email));
+    try {
+      return getPm().getObjectById(WaveletView.class, WaveletView.buildId(waveletId, email));
+    } catch (JDOObjectNotFoundException e) {
+      return null;
+    }
   }
 
   /**

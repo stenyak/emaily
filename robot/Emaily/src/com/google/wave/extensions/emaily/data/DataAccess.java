@@ -1,8 +1,6 @@
 package com.google.wave.extensions.emaily.data;
 
-import com.google.inject.servlet.RequestScoped;
 
-@RequestScoped
 public interface DataAccess {
 
   /**

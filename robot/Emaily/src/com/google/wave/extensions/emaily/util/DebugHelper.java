@@ -99,7 +99,6 @@ public class DebugHelper {
     sb.append("Wavelet Id: ").append(waveletView.getWaveletId()).append('\n');
     sb.append("User email: ").append(waveletView.getEmail()).append('\n');
     sb.append("Email address token: ").append(waveletView.getEmailAddressToken()).append('\n');
-    sb.append("").append(waveletView).append('\n');
     printTimestamp(sb, "Last email sent time: ", waveletView.getLastEmailSentTime());
     printTimestamp(sb, "Time for sending:     ", waveletView.getTimeForSending());
     sb.append("Unsent blips: \n");

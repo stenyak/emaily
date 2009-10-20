@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <w:robot xmlns:w="http://wave.google.com/extensions/robots/1.0">
   <w:capabilities>
-    <!-- w:capability name="WAVELET_PARTICIPANTS_CHANGED" content="true" / -->
+    <w:capability name="WAVELET_PARTICIPANTS_CHANGED" content="true" />
     <w:capability name="BLIP_SUBMITTED" content="true" />
+    <w:capability name="BLIP_DELETED" content="true" />
+    <w:capability name="BLIP_TIMESTAMP_CHANGED" content="true" />
+    <w:capability name="BLIP_VERSION_CHANGED" content="true" />
+    <w:capability name="WAVELET_BLIP_CREATED" content="true" />
   </w:capabilities>
-  <w:version>4</w:version>
+  <w:version>5</w:version>
   <w:profile
     name="Emaily Robot"
     imageurl="http://1.bp.blogspot.com/_yNL0M57xbfg/Skr1tUorzkI/AAAAAAAAAIU/Texw5ki8Qw8/s320/EMAIL_ICON.jpg"
