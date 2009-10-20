@@ -25,9 +25,6 @@ public class BlipVersionView {
   private long version;
   
   @Persistent
-  private boolean isLive;
-  
-  @Persistent
   private List<String> participants;
   
   @Persistent
@@ -59,14 +56,6 @@ public class BlipVersionView {
 
   public void setVersion(long version) {
     this.version = version;
-  }
-
-  public boolean isLive() {
-    return isLive;
-  }
-
-  public void setLive(boolean isLive) {
-    this.isLive = isLive;
   }
 
   public List<String> getParticipants() {

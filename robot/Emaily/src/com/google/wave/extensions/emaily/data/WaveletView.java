@@ -146,10 +146,17 @@ public class WaveletView {
   }
 
   public Long getTimeForSending() {
+    if (timeForSending == null) {
+      return Long.MAX_VALUE;
+    }
     return timeForSending;
   }
   
   public void setTimeForSending(Long timeForSending) {
-    this.timeForSending = timeForSending;
+    if (timeForSending == Long.MAX_VALUE) {
+      this.timeForSending = null;
+    } else {
+      this.timeForSending = timeForSending;
+    }
   }
 }

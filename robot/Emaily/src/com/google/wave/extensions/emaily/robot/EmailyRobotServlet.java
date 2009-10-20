@@ -38,6 +38,7 @@ import com.google.wave.extensions.emaily.email.EmailSender;
 import com.google.wave.extensions.emaily.email.MailUtil;
 import com.google.wave.extensions.emaily.email.PersistentEmail;
 import com.google.wave.extensions.emaily.scheduler.EmailScheduler;
+import com.google.wave.extensions.emaily.util.DebugHelper;
 
 @SuppressWarnings("serial")
 @Singleton
@@ -50,11 +51,12 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private final Logger logger;
   private final DataAccess dataAccess;
   private final EmailScheduler emailScheduler;
+  private final DebugHelper debugHelper;
 
   @Inject
   public EmailyRobotServlet(EmailSender emailSender, HostingProvider hostingProvider,
       Provider<HttpServletRequest> reqProvider, PersistenceManagerFactory pmFactory, Logger logger,
-      DataAccess dataAccess, EmailScheduler emailScheduler) {
+      DataAccess dataAccess, EmailScheduler emailScheduler, DebugHelper debugHelper) {
     this.emailSender = emailSender;
     this.hostingProvider = hostingProvider;
     this.reqProvider = reqProvider;
@@ -62,6 +64,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     this.logger = logger;
     this.dataAccess = dataAccess;
     this.emailScheduler = emailScheduler;
+    this.debugHelper = debugHelper;
   }
 
   /**
@@ -100,6 +103,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
         processBlipEvent(waveletView, e);
       }
       calculateNextSendTime(waveletView);
+      logger.info(debugHelper.printWaveletViewInfo(waveletView));
       dataAccess.persistWaveletView(waveletView);
     } finally {
       dataAccess.close();
@@ -147,7 +151,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private void calculateNextSendTime(WaveletView waveletView) {
     long nextActionTime = Long.MAX_VALUE;
     for (BlipVersionView blipVersionView: waveletView.getUnsentBlips()) {
-      nextActionTime = Math.min(nextActionTime, emailScheduler.calculateBlipTimeToBecomeSendable(blipVersionView));
+      blipVersionView.setTimeToBecomeSendable(emailScheduler.calculateBlipTimeToBecomeSendable(blipVersionView));
+      nextActionTime = Math.min(nextActionTime, blipVersionView.getTimeToBecomeSendable());
     }
     waveletView.setTimeForSending(nextActionTime);
   }
