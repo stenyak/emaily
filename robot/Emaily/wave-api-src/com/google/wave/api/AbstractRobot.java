@@ -15,6 +15,22 @@
 
 package com.google.wave.api;
 
+import com.google.wave.api.impl.ElementSerializer;
+import com.google.wave.api.impl.EventDataSerializer;
+import com.google.wave.api.impl.EventMessageBundle;
+import com.google.wave.api.impl.EventMessageBundleSerializer;
+import com.google.wave.api.impl.OperationMessageBundle;
+import com.google.wave.api.impl.OperationSerializer;
+import com.google.wave.api.impl.RobotMessageBundleImpl;
+
+import com.metaparadigm.jsonrpc.JSONSerializer;
+import com.metaparadigm.jsonrpc.MarshallException;
+import com.metaparadigm.jsonrpc.SerializerState;
+import com.metaparadigm.jsonrpc.UnmarshallException;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -25,21 +41,6 @@ import java.util.logging.Logger;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import com.google.wave.api.impl.ElementSerializer;
-import com.google.wave.api.impl.EventDataSerializer;
-import com.google.wave.api.impl.EventMessageBundle;
-import com.google.wave.api.impl.EventMessageBundleSerializer;
-import com.google.wave.api.impl.OperationMessageBundle;
-import com.google.wave.api.impl.OperationSerializer;
-import com.google.wave.api.impl.RobotMessageBundleImpl;
-import com.metaparadigm.jsonrpc.JSONSerializer;
-import com.metaparadigm.jsonrpc.MarshallException;
-import com.metaparadigm.jsonrpc.SerializerState;
-import com.metaparadigm.jsonrpc.UnmarshallException;
 
 /**
  * An abstract implementation of a Robot that handles deserialization of
@@ -317,6 +318,7 @@ public abstract class AbstractRobot extends HttpServlet implements RobotServlet 
    */
   public abstract String getRobotName();
   
+  @Override
   public abstract void processEvents(RobotMessageBundle events);
   
   /**

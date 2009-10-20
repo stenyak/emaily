@@ -51,12 +51,12 @@ public class BlipImpl implements Blip {
     this.textView = new TextViewImpl(blipData, events);
   }
   
-  
+  @Override
   public String getBlipId() {
     return blipData.getBlipId();
   }
 
-  
+  @Override
   public Wavelet getWavelet() {
     if (events.getWavelet().getWaveId().equals(blipData.getWaveId()) &&
         events.getWavelet().getWaveletId().equals(blipData.getWaveletId())) {
@@ -69,7 +69,7 @@ public class BlipImpl implements Blip {
     }
   }
 
-  
+  @Override
   public TextView getDocument() {
     return textView;
   }
@@ -86,7 +86,7 @@ public class BlipImpl implements Blip {
     return new BlipImpl(data, events);
   }
 
-  
+  @Override
   public List<Blip> getChildren() {
     List<Blip> children = new ArrayList<Blip>();
     for (String blipId : blipData.getChildBlipIds()) {
@@ -95,22 +95,22 @@ public class BlipImpl implements Blip {
     return children;
   }
 
-  
+  @Override
   public Blip getParent() {
     return new BlipImpl(events.getBlipData().get(blipData.getParentBlipId()), events);
   }
 
-  
+  @Override
   public boolean hasChildren() {
     return !blipData.getChildBlipIds().isEmpty();
   }
 
-  
+  @Override
   public Blip getChild(int index) {
     return createChildBlip(blipData.getChildBlipIds().get(index));
   }
 
-  
+  @Override
   public void delete() {
     events.addOperation(new OperationImpl(OperationType.BLIP_DELETE, blipData.getWaveId(),
         blipData.getWaveletId(), blipData.getBlipId(), -1, null));
@@ -118,12 +118,12 @@ public class BlipImpl implements Blip {
     events.getBlipData().get(blipData.getParentBlipId()).removeChildBlipId(blipData.getBlipId());
   }
 
-  
+  @Override
   public List<String> getContributors() {
     return blipData.getContributors();
   }
 
-  
+  @Override
   public Blip createChild() {
     BlipData childBlip = new BlipData();
     childBlip.setWaveId(blipData.getWaveId());
@@ -135,47 +135,47 @@ public class BlipImpl implements Blip {
     return new BlipImpl(childBlip, events);
   }
 
-  
+  @Override
   public long getLastModifiedTime() {
     return blipData.getLastModifiedTime();
   }
 
-  
+  @Override
   public long getVersion() {
     return blipData.getVersion();
   }
 
-  
+  @Override
   public String getCreator() {
     return blipData.getCreator();
   }
 
-  
+  @Override
   public boolean isChildAvailable(int index) {
     return events.getBlipData().containsKey(blipData.getChildBlipIds().get(index));
   }
 
-  
+  @Override
   public boolean isDocumentAvailable() {
     return blipData.getContent() != null && !blipData.getContent().isEmpty();
   }
 
-  
+  @Override
   public boolean isParentAvailable() {
     return events.getBlipData().containsKey(blipData.getParentBlipId());
   }
 
-  
+  @Override
   public List<String> getChildBlipIds() {
     return blipData.getChildBlipIds();
   }
 
-  
+  @Override
   public String getParentBlipId() {
     return blipData.getParentBlipId();
   }
 
-  
+  @Override
   public void deleteInlineBlip(Blip child) {
     events.addOperation(new OperationImpl(OperationType.DOCUMENT_INLINE_BLIP_DELETE,
         blipData.getWaveId(),

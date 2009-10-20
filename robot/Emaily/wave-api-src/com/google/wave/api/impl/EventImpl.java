@@ -45,12 +45,12 @@ public class EventImpl implements Event {
     return (ArrayList<String>) eventData.getProperties().get("participantsAdded");
   }
 
-  
+  @Override
   public Blip getBlip() {
     return new BlipImpl(events.getBlipData().get(eventData.getProperties().get("blipId")), events);
   }
 
-  
+  @Override
   public String getChangedTitle() {
     return getProperty("title");
   }
@@ -59,27 +59,27 @@ public class EventImpl implements Event {
     return (String) eventData.getProperties().get(property);
   }
 
-  
+  @Override
   public Long getChangedVersion() {
     return Long.parseLong(getProperty("version"));
   }
 
-  
+  @Override
   public String getCreatedBlipId() {
     return getProperty("createdBlipId");
   }
 
-  
+  @Override
   public String getModifiedBy() {
     return eventData.getModifiedBy();
   }
 
-  
+  @Override
   public String getRemovedBlipId() {
     return getProperty("removedBlipId");
   }
 
-  
+  @Override
   public Collection<String> getRemovedParticipants() {
     return unflattenParticipantList(getProperty("participantsRemoved"));
   }
@@ -88,22 +88,22 @@ public class EventImpl implements Event {
     return Arrays.asList(property.split(","));
   }
 
-  
+  @Override
   public Long getTimestamp() {
     return eventData.getTimestamp();
   }
 
-  
+  @Override
   public EventType getType() {
     return eventData.getType();
   }
 
-  
+  @Override
   public Wavelet getWavelet() {
     return events.getWavelet();
   }
   
-  
+  @Override
   public String getButtonName() {
     return getProperty("button");
   }

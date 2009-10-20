@@ -1,12 +1,16 @@
-/*
- * Copyright (c) 2009 Google Inc. Licensed under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with the
- * License. You may obtain a copy of the License at
- * http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law
- * or agreed to in writing, software distributed under the License is
- * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the specific language
- * governing permissions and limitations under the License.
+/* Copyright (c) 2009 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.google.wave.api.impl;
@@ -30,24 +34,27 @@ import java.util.Map;
 
 /**
  * {@link Element} serialization/deserialization.
- * 
+ *
  * @author scovitz@google.com (Seth Covitz)
  */
 @SuppressWarnings("unchecked")
 public class ElementSerializer extends AbstractSerializer {
 
-  private static final Class[] SERIALIZABLE_CLASSES = new Class[] { Element.class,
-      FormElement.class, Gadget.class, Image.class };
+  private static final Class[] SERIALIZABLE_CLASSES =
+      new Class[] { Element.class, FormElement.class, Gadget.class, Image.class };
   private static final Class[] JSON_CLASSES = new Class[] { JSONObject.class };
 
+  @Override
   public Class[] getJSONClasses() {
     return JSON_CLASSES;
   }
 
+  @Override
   public Class[] getSerializableClasses() {
     return SERIALIZABLE_CLASSES;
   }
 
+  @Override
   public Object marshall(SerializerState state, Object o) throws MarshallException {
     if (!(o instanceof Element)) {
       throw new MarshallException("Object is not of type Element.");
@@ -66,10 +73,12 @@ public class ElementSerializer extends AbstractSerializer {
     return json;
   }
 
+  @Override
   public ObjectMatch tryUnmarshall(SerializerState state, Class clazz, Object json) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public Object unmarshall(SerializerState state, Class clazz, Object json)
       throws UnmarshallException {
     if (!Element.class.isAssignableFrom(clazz)) {
@@ -79,11 +88,11 @@ public class ElementSerializer extends AbstractSerializer {
     JSONObject jsonObject = (JSONObject) json;
     Element element = null;
     try {
-      // String javaname = jsonObject.isNull("name") ? "" : jsonObject.getString("name");
+      String javaname = jsonObject.isNull("name") ? "" : jsonObject.getString("name");
       element = (Element) clazz.newInstance();
       element.setType(ElementType.valueOf(jsonObject.getString("type")));
-      element.setProperties((Map<String, String>) ser.unmarshall(state, Map.class, jsonObject
-          .getJSONObject("properties")));
+      element.setProperties((Map<String, String>) ser.unmarshall(state, Map.class,
+          jsonObject.getJSONObject("properties")));
 
     } catch (InstantiationException e) {
       e.printStackTrace();

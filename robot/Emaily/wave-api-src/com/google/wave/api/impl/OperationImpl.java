@@ -95,22 +95,22 @@ public class OperationImpl implements Operation {
     this.waveletId = waveletId;
   }
 
-  
+  @Override
   public int getIndex() {
     return index;
   }
 
-  
+  @Override
   public Object getProperty() {
     return property;
   }
 
-  
+  @Override
   public void setIndex(int index) {
     this.index = index;
   }
 
-  
+  @Override
   public void setProperty(Object property) {
     this.property = property;
   }

@@ -42,17 +42,17 @@ public class OperationSerializer extends AbstractSerializer {
   private static final Class[] SERIALIZABLE_CLASSES = new Class[] { OperationImpl.class };
   private static final Class[] JSON_CLASSES = new Class[] { JSONObject.class };
 
-  
+  @Override
   public Class[] getJSONClasses() {
     return JSON_CLASSES;
   }
 
-  
+  @Override
   public Class[] getSerializableClasses() {
     return SERIALIZABLE_CLASSES;
   }
 
-  
+  @Override
   public Object marshall(SerializerState state, Object o) throws MarshallException {
     if (!(o instanceof Operation)) {
       throw new MarshallException("Object is not of type Operation.");
@@ -75,12 +75,14 @@ public class OperationSerializer extends AbstractSerializer {
     return json;
   }
 
+  @SuppressWarnings("unused")
+  @Override
   public ObjectMatch tryUnmarshall(SerializerState state, Class clazz, Object json)
       throws UnmarshallException {
     throw new UnsupportedOperationException();
   }
 
-  
+  @Override
   public Object unmarshall(SerializerState state, Class clazz, Object json)
       throws UnmarshallException {
     if (!Operation.class.isAssignableFrom(clazz)) {
