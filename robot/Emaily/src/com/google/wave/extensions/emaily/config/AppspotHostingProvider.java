@@ -16,6 +16,8 @@ import com.google.inject.Singleton;
 @Singleton
 public class AppspotHostingProvider implements HostingProvider {
   private static final String PROD_VERSION = "hosting.appspot.prod_version";
+  
+  private static final String[] requiredProperties = { PROD_VERSION };
 
   private final Logger logger;
   private final EmailyConfig emailyConfig;
@@ -33,6 +35,7 @@ public class AppspotHostingProvider implements HostingProvider {
    * Reads the appengine-specific configuration options from appengine-web.xml.
    */
   private void initialize() {
+    emailyConfig.checkRequiredStringProperties(requiredProperties);
     // Set AppEngine properties from appengine-web.xml
     appName = ApiProxy.getCurrentEnvironment().getAppId();
     StringTokenizer versionTokenizer = new StringTokenizer(ApiProxy.getCurrentEnvironment()

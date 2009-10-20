@@ -42,8 +42,11 @@ public class WaveletView {
   private List<BlipVersionView> sentBlips;
   
   @Persistent
-  private Long nextSendTimestamp;  // nullable
+  private long lastEmailSentTime;
 
+  @Persistent
+  private Long timeForSending;
+  
   public WaveletView(String waveletId, String email) {
     this();
     id = buildId(waveletId, email);
@@ -51,7 +54,8 @@ public class WaveletView {
     emailAddressToken = generateNewEmailAddressToken();
     unsentBlips = new ArrayList<BlipVersionView>();
     sentBlips = new ArrayList<BlipVersionView>();
-    nextSendTimestamp = null;
+    lastEmailSentTime = 0;
+    timeForSending = null;
   }
 
   private WaveletView() {
@@ -78,7 +82,29 @@ public class WaveletView {
     id = buildId(waveletId, email);
   }
   
+  // utility functions
+  
+  public static String buildId(String waveletId, String email) {
+    return waveletId + ' ' + email;
+  }
+
+  private static String[] splitId(String id) {
+    if (id == null) {
+      return new String[] { "", "" };
+    }
+    int at = id.indexOf(' ');
+    if (at < 0) {
+      return new String[] { id, "" };
+    }
+    return new String[] { id.substring(0, at), id.substring(at + 1) };
+  }
+
+  private static String generateNewEmailAddressToken() {
+    return Long.toString(randomGenerator.nextLong());
+  }
+  
   // Accessors for the rest of the fields
+
   public long getVersion() {
     return version;
   }
@@ -111,31 +137,19 @@ public class WaveletView {
     this.sentBlips = sentBlips;
   }
 
-  public Long getNextSendTimestamp() {
-    return nextSendTimestamp;
+  public long getLastEmailSentTime() {
+    return lastEmailSentTime;
   }
 
-  public void setNextSendTimestamp(Long nextSendTimestamp) {
-    this.nextSendTimestamp = nextSendTimestamp;
+  public void setLastEmailSentTime(long lastEmailSentTime) {
+    this.lastEmailSentTime = lastEmailSentTime;
   }
 
-  // utility functions: split id into two parts
-  public static String buildId(String waveletId, String email) {
-    return waveletId + ' ' + email;
+  public Long getTimeForSending() {
+    return timeForSending;
   }
-
-  private static String[] splitId(String id) {
-    if (id == null) {
-      return new String[] { "", "" };
-    }
-    int at = id.indexOf(' ');
-    if (at < 0) {
-      return new String[] { id, "" };
-    }
-    return new String[] { id.substring(0, at), id.substring(at + 1) };
-  }
-
-  private String generateNewEmailAddressToken() {
-    return Long.toString(randomGenerator.nextLong());
+  
+  public void setTimeForSending(Long timeForSending) {
+    this.timeForSending = timeForSending;
   }
 }

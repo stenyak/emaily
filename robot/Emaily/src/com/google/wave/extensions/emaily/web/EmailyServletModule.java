@@ -44,9 +44,4 @@ public class EmailyServletModule extends ServletModule {
     return servletProperties;
   }
   
-  // PersistenceManager
-  @Provides @Singleton
-  public PersistenceManagerFactory getPersistenceManagerFactory() {
-    return JDOHelper.getPersistenceManagerFactory("transactions-optional");
-  }
 }

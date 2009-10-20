@@ -37,6 +37,7 @@ import com.google.wave.extensions.emaily.data.WaveletView;
 import com.google.wave.extensions.emaily.email.EmailSender;
 import com.google.wave.extensions.emaily.email.MailUtil;
 import com.google.wave.extensions.emaily.email.PersistentEmail;
+import com.google.wave.extensions.emaily.scheduler.EmailScheduler;
 
 @SuppressWarnings("serial")
 @Singleton
@@ -48,17 +49,19 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private final PersistenceManagerFactory pmFactory;
   private final Logger logger;
   private final DataAccess dataAccess;
+  private final EmailScheduler emailScheduler;
 
   @Inject
   public EmailyRobotServlet(EmailSender emailSender, HostingProvider hostingProvider,
       Provider<HttpServletRequest> reqProvider, PersistenceManagerFactory pmFactory, Logger logger,
-      DataAccess dataAccess) {
+      DataAccess dataAccess, EmailScheduler emailScheduler) {
     this.emailSender = emailSender;
     this.hostingProvider = hostingProvider;
     this.reqProvider = reqProvider;
     this.pmFactory = pmFactory;
     this.logger = logger;
     this.dataAccess = dataAccess;
+    this.emailScheduler = emailScheduler;
   }
 
   /**
@@ -95,6 +98,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     for (Event e: bundle.getEvents()) {
       processBlipEvent(waveletView, e);
     }
+    
   }
 
   private void processBlipEvent(WaveletView waveletView, Event e) {
@@ -132,7 +136,14 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       still_editing = true;
       break;
     }
-    // TODO(dlux): call the scheduler with this information
+    emailScheduler.SetBlipViewTimes(blipVersionView, still_editing);
+  }
+  
+  private void calculateNextSendTime(WaveletView waveletView) {
+    long nextActionTime = Long.MAX_VALUE;
+    for (BlipVersionView blipVersionView: waveletView.getUnsentBlips()) {
+      nextActionTime = Math.min(nextActionTime, emailScheduler.calculateBlipTimeToBecomeSendable(blipVersionView));
+    }
   }
 
   /**
