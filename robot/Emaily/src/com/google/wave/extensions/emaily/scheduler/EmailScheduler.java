@@ -19,7 +19,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.config.EmailyConfig;
 import com.google.wave.extensions.emaily.data.BlipVersionView;
-import com.google.wave.extensions.emaily.data.WaveletView;
 
 // The basic idea on the basic sending schedule is the following:
 // - The bot should not send emails more frequently than 10 minutes.

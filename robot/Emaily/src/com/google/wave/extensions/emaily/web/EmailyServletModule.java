@@ -2,9 +2,6 @@ package com.google.wave.extensions.emaily.web;
 
 import java.util.Properties;
 
-import javax.jdo.JDOHelper;
-import javax.jdo.PersistenceManagerFactory;
-
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;

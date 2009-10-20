@@ -14,7 +14,7 @@ public class DataAccessModule extends AbstractModule {
     bind(DataAccess.class).to(JDODataAccess.class);
   }
 
-  // PersistenceManager
+  // PersistenceManagerFactory for JDO
   @Provides @Singleton
   public PersistenceManagerFactory getPersistenceManagerFactory() {
     return JDOHelper.getPersistenceManagerFactory("transactions-optional");

@@ -90,15 +90,20 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * @param email The email of the user.
    */
   private void processWaveletViewModifications(RobotMessageBundle bundle, String email) {
-    String waveletId = bundle.getWavelet().getWaveletId();
-    WaveletView waveletView = dataAccess.getWaveletView(waveletId, email);
-    if (waveletView == null) {
-      waveletView = new WaveletView(email, waveletId);
+    try {
+      String waveletId = bundle.getWavelet().getWaveletId();
+      WaveletView waveletView = dataAccess.getWaveletView(waveletId, email);
+      if (waveletView == null) {
+        waveletView = new WaveletView(email, waveletId);
+      }
+      for (Event e : bundle.getEvents()) {
+        processBlipEvent(waveletView, e);
+      }
+      calculateNextSendTime(waveletView);
+      dataAccess.persistWaveletView(waveletView);
+    } finally {
+      dataAccess.close();
     }
-    for (Event e: bundle.getEvents()) {
-      processBlipEvent(waveletView, e);
-    }
-    
   }
 
   private void processBlipEvent(WaveletView waveletView, Event e) {
@@ -144,6 +149,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     for (BlipVersionView blipVersionView: waveletView.getUnsentBlips()) {
       nextActionTime = Math.min(nextActionTime, emailScheduler.calculateBlipTimeToBecomeSendable(blipVersionView));
     }
+    waveletView.setTimeForSending(nextActionTime);
   }
 
   /**
