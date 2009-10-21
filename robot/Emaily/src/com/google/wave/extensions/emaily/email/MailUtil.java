@@ -38,7 +38,7 @@ public class MailUtil {
    *         otherwise (e.g. if this is an HTML document, an image or a base64
    *         encoded binary content).
    */
-  public static boolean mimeEntityToText(StringBuilder sb, Entity entity) {
+  public boolean mimeEntityToText(StringBuilder sb, Entity entity) {
     if (entity.isMultipart()) {
       Multipart multipart = (Multipart) entity.getBody();
       // TODO(taton) Figure out how to handle the message preamble and epilogue?
@@ -72,9 +72,5 @@ public class MailUtil {
           .append("]\n");
       return false;
     }
-  }
-
-  // There are no instance of this class.
-  private MailUtil() {
   }
 }

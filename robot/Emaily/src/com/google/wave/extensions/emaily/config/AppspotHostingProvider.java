@@ -29,14 +29,17 @@ import com.google.inject.Singleton;
  */
 @Singleton
 public class AppspotHostingProvider implements HostingProvider {
+  // Configuration properties
   private static final String PROD_VERSION = "hosting.appspot.prod_version";
-  
   private static final String[] requiredProperties = { PROD_VERSION };
 
-  private final Logger logger;
-  private final EmailyConfig emailyConfig;
+  // Application name and version
   private String appName;
   private String appVersion;
+
+  // Injected dependencies
+  private final Logger logger;
+  private final EmailyConfig emailyConfig;
 
   @Inject
   AppspotHostingProvider(EmailyConfig emailyConfig, Logger logger) {
@@ -46,11 +49,10 @@ public class AppspotHostingProvider implements HostingProvider {
   }
 
   /**
-   * Reads the appengine-specific configuration options from appengine-web.xml.
+   * Initializes the appengine hosting provider: fills the application name version from the API.
    */
   private void initialize() {
     emailyConfig.checkRequiredProperties(requiredProperties);
-    // Set AppEngine properties from appengine-web.xml
     appName = ApiProxy.getCurrentEnvironment().getAppId();
     StringTokenizer versionTokenizer = new StringTokenizer(ApiProxy.getCurrentEnvironment()
         .getVersionId(), ".", false);
@@ -88,6 +90,7 @@ public class AppspotHostingProvider implements HostingProvider {
     return proxyingFor.substring(0, at) + '@' + proxyingFor.substring(at + 1);
   }
 
+  @Override
   public String getRobotWaveParticipantIdFromEmailAddress(String email) {
     int at = email.lastIndexOf('@');
     if (at < 0) {

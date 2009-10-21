@@ -24,6 +24,12 @@ import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
+/**
+ * A blip version object, which stores the current state of a blip in a wavelet view.
+ * 
+ * @author dlux
+ * 
+ */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class BlipVersionView {
   // Id of the blip view: it is composed of the parent WaveletView id, plus the blip id, plus the version.
@@ -32,7 +38,8 @@ public class BlipVersionView {
   @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")
   @PrimaryKey
   private String id;
-  
+
+  // Other fields
   @Persistent
   private String blipId;
 
@@ -54,9 +61,11 @@ public class BlipVersionView {
   @Persistent
   private long lastChangedTimestamp;
   
+  // This field is calculated when necessary. See EmailScheduler.java
   @NotPersistent
   private long timeToBecomeSendable;
-  
+
+  // Accessors
   public String getBlipId() {
     return blipId;
   }

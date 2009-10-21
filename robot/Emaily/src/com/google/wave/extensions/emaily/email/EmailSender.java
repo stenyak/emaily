@@ -26,6 +26,12 @@ import javax.mail.internet.MimeMessage.RecipientType;
 
 import com.google.inject.Singleton;
 
+/**
+ * Method(s) to send email.
+ * 
+ * @author dlux
+ * 
+ */
 @Singleton
 public class EmailSender {
   /**

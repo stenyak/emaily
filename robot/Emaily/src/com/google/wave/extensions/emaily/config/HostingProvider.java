@@ -43,6 +43,7 @@ public interface HostingProvider {
   
   /**
    * Returns a Robot wave Id to proxy for a given email address.
+   * 
    * @param email The email address.
    * @return The wave Id which is proxying for that email address.
    */
@@ -50,6 +51,7 @@ public interface HostingProvider {
   
   /**
    * Returns true if the robot what is running is a production version.
+   * 
    * @return True if the currently running robot is a production version
    */
   public boolean isProductionVersion();

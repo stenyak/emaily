@@ -26,6 +26,12 @@ import com.google.inject.Injector;
 import com.google.inject.servlet.GuiceServletContextListener;
 import com.google.wave.extensions.emaily.data.JDODataAccessModule;
 
+/**
+ * Guice servlet context listener, which loads configuration and bootstraps the guice modules.
+ * 
+ * @author dlux
+ * 
+ */
 public class EmailyServletContextListener extends GuiceServletContextListener {
   private Properties properties;
 

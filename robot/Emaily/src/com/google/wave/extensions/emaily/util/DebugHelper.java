@@ -33,7 +33,7 @@ import com.google.wave.extensions.emaily.data.BlipVersionView;
 import com.google.wave.extensions.emaily.data.WaveletView;
 
 /**
- * Utility functions for debugging Wave and Robot interactions
+ * Utility functions for debugging Wave and Robot interactions and datastore entities.
  * 
  * @author dlux
  */
@@ -102,12 +102,24 @@ public class DebugHelper {
     sp.append("Root blip ID: ").append(wavelet.getRootBlipId()).append("\n");
   }
 
+  /**
+   * Returns debug information about a WaveletView data object.
+   * 
+   * @param waveletView The wavelet view to dump.
+   * @return The debug string.
+   */
   public String printWaveletViewInfo(WaveletView waveletView) {
     StringBuilder sb = new StringBuilder();
     printWaveletViewInfo(sb, waveletView);
     return sb.toString();
   }
 
+  /**
+   * Returns debug information about a WaveletView data object.
+   * 
+   * @param sb The stringbuffer to append the information to.
+   * @param waveletView The wavelet view to dump.
+   */
   public void printWaveletViewInfo(StringBuilder sb, WaveletView waveletView) {
     sb.append("WaveletView info:\n");
     sb.append("Wavelet Id: ").append(waveletView.getWaveletId()).append('\n');
@@ -130,6 +142,13 @@ public class DebugHelper {
 
   private DateFormat dateTimeFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
+  /**
+   * Prints a timestamp (long value in milliseconds) in a readable format into a stringbuffer.
+   * 
+   * @param sb The stringbuffer to print to.
+   * @param prefix The prefix string to be printed.
+   * @param time The time value.
+   */
   private void printTimestamp(StringBuilder sb, String prefix, Long time) {
     sb.append(prefix);
     if (time == null) {

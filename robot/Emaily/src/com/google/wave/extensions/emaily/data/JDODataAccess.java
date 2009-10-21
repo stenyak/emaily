@@ -22,11 +22,20 @@ import javax.jdo.Transaction;
 import com.google.inject.Inject;
 import com.google.inject.servlet.RequestScoped;
 
+/**
+ * Data access object for JDO.
+ * 
+ * @author dlux
+ * 
+ */
 @RequestScoped
 public class JDODataAccess implements DataAccess {
-  private final PersistenceManagerFactory pmf;
+  // Current persistence manager and transaction
   private PersistenceManager pm = null;
   private Transaction tx = null;
+
+  // Injected dependencies
+  private final PersistenceManagerFactory pmf;
 
   @Inject
   public JDODataAccess(PersistenceManagerFactory pmf) {
@@ -56,46 +65,42 @@ public class JDODataAccess implements DataAccess {
    * Get the persistence manager.
    * 
    * @return The persistence manager. If it is not exist, it creates one, and creates a new
-   *         transaction for that.
+   *         transaction also.
    */
   private PersistenceManager getPm() {
     if (pm == null) {
-      createPersistenceManager();
+      pm = pmf.getPersistenceManager();
+      tx = pm.currentTransaction();
+      tx.begin();
     }
     return pm;
   }
 
-  private void createPersistenceManager() {
-    pm = pmf.getPersistenceManager();
-    tx = pm.currentTransaction();
-    tx.begin();
-  }
-
-  /**
-   * Closes the persistence manager.
-   */
   @Override
-  public void close() {
+  public void commit() {
     if (tx != null && tx.isActive()) {
       tx.commit();
     }
+    closeTransactionandPersistenceManager();
+  }
+
+  @Override
+  public void rollback() {
+    if (tx != null && tx.isActive()) {
+      tx.rollback();
+    }
+    closeTransactionandPersistenceManager();
+  }
+
+  /**
+   * Delete the transaction and closes the persistence manager.
+   */
+  private void closeTransactionandPersistenceManager() {
     tx = null;
 
     if (pm != null) {
       pm.close();
     }
     pm = null;
-  }
-
-  /**
-   * Rolls back the transaction and closes the persistence manager.
-   */
-  @Override
-  public void rollback() {
-    if (tx != null && tx.isActive()) {
-      tx.rollback();
-    }
-    tx = null;
-    close();
   }
 }

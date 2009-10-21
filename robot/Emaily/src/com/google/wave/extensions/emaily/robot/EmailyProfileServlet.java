@@ -22,13 +22,13 @@ import com.google.wave.extensions.emaily.config.EmailyConfig;
 import com.google.wave.extensions.emaily.config.HostingProvider;
 
 /**
- * Servlet to return the profile information for the robot.
+ * Servlet to return the profile information for a robot and users in the robot domain.
  * 
  * @author dlux
  */
 @Singleton
 public class EmailyProfileServlet extends ProfileServlet {
-  // Config parameters
+  // Config properties
   private static final String LOGO_URL = "profile.logo_url";
   private static final String ROBOT_NAME_PROD = "profile.robot_name.prod";
   private static final String ROBOT_NAME_NONPROD = "profile.robot_name.nonprod";
@@ -36,6 +36,7 @@ public class EmailyProfileServlet extends ProfileServlet {
   private static final String[] requiredProperties = { LOGO_URL, ROBOT_NAME_PROD,
       ROBOT_NAME_NONPROD };
 
+  // Injected dependencies
   private final EmailyConfig emailyConfig;
   private final HostingProvider hostingProvider;
 

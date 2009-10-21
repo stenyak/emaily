@@ -45,6 +45,7 @@ public class WaveletView {
   @Persistent
   private String id; 
   
+  // Fields
   @Persistent
   private long version;
   
@@ -65,6 +66,12 @@ public class WaveletView {
   @Persistent
   private Long timeForSending;  // nullable, null means: infinity
   
+  /**
+   * Constructor for an empty object with a key and default values.
+   * 
+   * @param waveletId
+   * @param email
+   */
   public WaveletView(String waveletId, String email) {
     this();
     id = buildId(waveletId, email);
@@ -104,8 +111,7 @@ public class WaveletView {
     id = buildId(waveletId, email);
   }
   
-  // utility functions
-  
+  // utility functions  
   public static String buildId(String waveletId, String email) {
     return waveletId + ' ' + email;
   }
@@ -126,7 +132,6 @@ public class WaveletView {
   }
   
   // Accessors for the rest of the fields
-
   public long getVersion() {
     return version;
   }

@@ -54,6 +54,12 @@ import com.google.wave.extensions.emaily.email.PersistentEmail;
 import com.google.wave.extensions.emaily.scheduler.EmailScheduler;
 import com.google.wave.extensions.emaily.util.DebugHelper;
 
+/**
+ * Servlet for serving the Wave robot requests.
+ * 
+ * @author dlux
+ *
+ */
 @SuppressWarnings("serial")
 @Singleton
 public class EmailyRobotServlet extends AbstractRobotServlet {
@@ -66,12 +72,13 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private final EmailScheduler emailScheduler;
   private final DebugHelper debugHelper;
   private final Provider<DataAccess> dataAccessProvider;
+  private final MailUtil mailUtil;
 
   @Inject
   public EmailyRobotServlet(EmailSender emailSender, HostingProvider hostingProvider,
       Provider<HttpServletRequest> reqProvider, PersistenceManagerFactory pmFactory, Logger logger,
       EmailScheduler emailScheduler, DebugHelper debugHelper,
-      Provider<DataAccess> dataAccessProvider) {
+      Provider<DataAccess> dataAccessProvider, MailUtil mailUtil) {
     this.emailSender = emailSender;
     this.hostingProvider = hostingProvider;
     this.reqProvider = reqProvider;
@@ -80,6 +87,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     this.emailScheduler = emailScheduler;
     this.debugHelper = debugHelper;
     this.dataAccessProvider = dataAccessProvider;
+    this.mailUtil = mailUtil;
   }
 
   /**
@@ -133,10 +141,16 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       dataAccessProvider.get().rollback();
       throw e;
     } finally {
-      dataAccessProvider.get().close();
+      dataAccessProvider.get().commit();
     }
   }
 
+  /**
+   * Process one blip-related event.
+   * 
+   * @param waveletView The wavelet view data object of the current event.
+   * @param e The wave event.
+   */
   private void processBlipEvent(WaveletView waveletView, Event e) {
     // We are dealing only with blip events.
     Blip blip = e.getBlip();
@@ -159,6 +173,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     }
     // Update the blip version to the latest
     blipVersionView.setVersion(blip.getVersion());
+
     // Store the text
     // TODO(dlux): add "title" handling.
     blipVersionView.setContent(blip.getDocument().getText());
@@ -177,8 +192,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   }
 
   /**
-   * Handle when a blip is submitted. Currenlty it sends the blip in email
-   * immediately.
+   * Send an email immediately after a blip is submitted. Note, that this
+   * behavior is going to be deprecated soon.
    * 
    * @param bundle RobotMessageBundle received from the Wave Server.
    * @param event The BLIP_SUBMITTED event.
@@ -213,6 +228,11 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     emailSender.simpleSendTextEmail(senderEmail, recipient, emailSubject, emailBody);
   }
 
+  /**
+   * Returns the "proxyingFor" argument of the Wave Robot query for the currently processed request.
+   * 
+   * @return The value of the "proxyingFor" field.
+   */
   private String getProxyingFor() {
     JSONObject json = (JSONObject) reqProvider.get().getAttribute("jsonObject");
     try {
@@ -319,7 +339,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       // end-of-lines. This still does not work properly.
       StringBuilder sb = new StringBuilder();
       sb.append("\n");
-      MailUtil.mimeEntityToText(sb, message);
+      mailUtil.mimeEntityToText(sb, message);
       sb.append("\n");
       textView.append(sb.toString());
     }

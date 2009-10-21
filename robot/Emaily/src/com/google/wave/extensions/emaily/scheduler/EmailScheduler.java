@@ -22,7 +22,7 @@ import com.google.wave.extensions.emaily.config.EmailyConfig;
 import com.google.wave.extensions.emaily.data.BlipVersionView;
 import com.google.wave.extensions.emaily.data.WaveletView;
 
-// The basic idea on the basic sending schedule is the following:
+// The idea on the basic sending schedule is the following:
 // - The bot should not send emails more frequently than 10 minutes.
 // - If a blip is submitted, then the bot should wait for at least one
 // minute before marking the blip "sendable".
@@ -59,6 +59,7 @@ public class EmailScheduler {
   private static String[] requiredLongProperties = { SEND_TIME_AFTER_BLIP_SUBMIT,
       SEND_TIME_AFTER_BLIP_NO_EDIT, SEND_TIME_IF_CONSTANTLY_EDITED, MIN_EMAIL_SEND_TIME };
 
+  // Injected dependencies
   private final EmailyConfig config;
 
   @Inject
@@ -68,7 +69,7 @@ public class EmailScheduler {
   }
 
   /**
-   * Marks event times in the given blipVersionView.
+   * Update event times to <i>now</i> in the given blipVersionView.
    * 
    * @param blipVersionView The blipVersionView to change.
    * @param still_editing If a user is editing the blip or not.
@@ -85,7 +86,8 @@ public class EmailScheduler {
   }
 
   /**
-   * Calculates the next send operation time of the wavelet.
+   * Calculates the next send operation time of the wavelet and store it into the
+   * <code>timeForSending</code> field.
    * 
    * @param waveletView The wavelet to analyze.
    */
