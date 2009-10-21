@@ -87,13 +87,13 @@ public class DebugHelper {
           .append("\n");
     sp.append("Root blip ID: ").append(wavelet.getRootBlipId()).append("\n");
   }
-  
+
   public String printWaveletViewInfo(WaveletView waveletView) {
     StringBuilder sb = new StringBuilder();
     printWaveletViewInfo(sb, waveletView);
     return sb.toString();
   }
-  
+
   public void printWaveletViewInfo(StringBuilder sb, WaveletView waveletView) {
     sb.append("WaveletView info:\n");
     sb.append("Wavelet Id: ").append(waveletView.getWaveletId()).append('\n');
@@ -102,7 +102,7 @@ public class DebugHelper {
     printTimestamp(sb, "Last email sent time: ", waveletView.getLastEmailSentTime());
     printTimestamp(sb, "Time for sending:     ", waveletView.getTimeForSending());
     sb.append("Unsent blips: \n");
-    for (BlipVersionView b: waveletView.getUnsentBlips()) {
+    for (BlipVersionView b : waveletView.getUnsentBlips()) {
       sb.append("- Blip Id:").append(b.getBlipId()).append('\n');
       sb.append("  Blip version:").append(b.getVersion()).append('\n');
       // sb.append("  Participants:").append(b.getParticipants(), ", ").append('\n');
@@ -113,20 +113,20 @@ public class DebugHelper {
       sb.append("  Content:").append(b.getContent()).append('\n');
     }
   }
-  
+
   private DateFormat dateTimeFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
   private void printTimestamp(StringBuilder sb, String prefix, Long time) {
     sb.append(prefix);
     if (time == null) {
       sb.append("null");
-    }
-    if (time == 0) {
+    } else if (time == 0) {
       sb.append("0");
+    } else if (time == Long.MAX_VALUE) {
+      sb.append("In the future, far, far away...");
     } else {
       sb.append(dateTimeFormatter.format(new Date(time)));
     }
     sb.append('\n');
   }
 }
-  

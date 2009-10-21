@@ -3,6 +3,7 @@ package com.google.wave.extensions.emaily.data;
 import java.util.List;
 
 import javax.jdo.annotations.Extension;
+import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.NotPersistent;
 import javax.jdo.annotations.PersistenceCapable;
@@ -13,15 +14,11 @@ import javax.jdo.annotations.PrimaryKey;
 public class BlipVersionView {
   // Id of the blip view: it is composed of the parent WaveletView id, plus the blip id, plus the version.
   @SuppressWarnings("unused")
-  @PrimaryKey
-  @Persistent
+  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")
+  @PrimaryKey
   private String id;
   
-  @Persistent
-  @Extension(vendorName="datanucleus", key="gae.parent-pk", value="true")
-  private String parentId;
-
   @Persistent
   private String blipId;
 
@@ -46,14 +43,6 @@ public class BlipVersionView {
   @NotPersistent
   private long timeToBecomeSendable;
   
-  public String getParentId() {
-    return parentId;
-  }
-  
-  public void setParentId(String parentId) {
-    this.parentId = parentId;
-  }
-
   public String getBlipId() {
     return blipId;
   }

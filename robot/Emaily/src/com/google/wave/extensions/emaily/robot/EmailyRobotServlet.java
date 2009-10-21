@@ -97,15 +97,23 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private void processWaveletViewModifications(RobotMessageBundle bundle, String email) {
     try {
       String waveletId = bundle.getWavelet().getWaveletId();
+      
+      // Get or create the WaveletView for the wavelet and the current user.
       WaveletView waveletView = dataAccessProvider.get().getWaveletView(waveletId, email);
       if (waveletView == null) {
         waveletView = new WaveletView(waveletId, email);
         dataAccessProvider.get().persistWaveletView(waveletView);
       }
+      
+      // Process the blip events
       for (Event e : bundle.getEvents()) {
         processBlipEvent(waveletView, e);
       }
+      
+      // Calculate the next send time
       emailScheduler.calculateWaveletViewNextSendTime(waveletView);
+      
+      // Prints the debug info
       logger.info(debugHelper.printWaveletViewInfo(waveletView));
     } catch (RuntimeException e) {
       dataAccessProvider.get().rollback();
@@ -133,7 +141,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     if (blipVersionView == null) {
       blipVersionView = new BlipVersionView();
       blipVersionView.setBlipId(blip.getBlipId());
-      blipVersionView.setParentId(waveletView.getId());
+      waveletView.getUnsentBlips().add(blipVersionView);
     }
     // Update the blip version to the latest
     blipVersionView.setVersion(blip.getVersion());
