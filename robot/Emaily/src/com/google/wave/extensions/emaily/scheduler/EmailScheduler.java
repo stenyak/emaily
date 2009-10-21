@@ -55,12 +55,8 @@ public class EmailScheduler {
   public static final String SEND_TIME_IF_CONSTANTLY_EDITED = "schedule.send_time_if_constantly_edited";
   public static final String MIN_EMAIL_SEND_TIME = "schedule.min_email_send_time";
 
-  private static String[] requiredLongProperties = {
-    SEND_TIME_AFTER_BLIP_SUBMIT,
-    SEND_TIME_AFTER_BLIP_NO_EDIT,
-    SEND_TIME_IF_CONSTANTLY_EDITED,
-    MIN_EMAIL_SEND_TIME
-  };
+  private static String[] requiredLongProperties = { SEND_TIME_AFTER_BLIP_SUBMIT,
+      SEND_TIME_AFTER_BLIP_NO_EDIT, SEND_TIME_IF_CONSTANTLY_EDITED, MIN_EMAIL_SEND_TIME };
 
   private final EmailyConfig config;
 
@@ -76,8 +72,7 @@ public class EmailScheduler {
    * @param blipVersionView The blipVersionView to change.
    * @param still_editing If a user is editing the blip or not.
    */
-  public void SetBlipViewTimes(BlipVersionView blipVersionView,
-      Boolean still_editing) {
+  public void updateBlipViewTimestamps(BlipVersionView blipVersionView, Boolean still_editing) {
     long time = Calendar.getInstance().getTimeInMillis();
     if (blipVersionView.getFirstEditedTimestamp() == 0) {
       blipVersionView.setFirstEditedTimestamp(time);
@@ -90,37 +85,40 @@ public class EmailScheduler {
 
   /**
    * Calculates the next send operation time of the wavelet.
+   * 
    * @param waveletView The wavelet to analyze.
    */
   public void calculateWaveletViewNextSendTime(WaveletView waveletView) {
     long nextActionTime = Long.MAX_VALUE;
-    for (BlipVersionView blipVersionView: waveletView.getUnsentBlips()) {
-      blipVersionView.setTimeToBecomeSendable(calculateBlipTimeToBecomeSendable(blipVersionView));
+    for (BlipVersionView blipVersionView : waveletView.getUnsentBlips()) {
+      calculateBlipTimeToBecomeSendable(blipVersionView);
       nextActionTime = Math.min(nextActionTime, blipVersionView.getTimeToBecomeSendable());
     }
     nextActionTime = Math.max(nextActionTime, waveletView.getLastEmailSentTime()
         + config.getLong(MIN_EMAIL_SEND_TIME) * 1000);
+    // TODO(dlux): Add blip parent check (see description at the top) to decide
+    // on sending a blip.
     waveletView.setTimeForSending(nextActionTime);
   }
 
   /**
    * Calculates the next email send time for a blipVersionView.
    * 
-   * @param blipVersionView the blipVersionView to change
-   * @return The time when the blip is going to be sendable
+   * @param b the blipVersionView to change
    */
-  private long calculateBlipTimeToBecomeSendable(BlipVersionView blipVersionView) {
-    long sendable = Long.MAX_VALUE;
-    sendable = Math.min(sendable, blipVersionView.getLastSubmittedTimestamp()
-        + config.getLong(SEND_TIME_AFTER_BLIP_SUBMIT) * 1000);
-    sendable = Math.min(sendable, blipVersionView.getLastChangedTimestamp()
-        + config.getLong(SEND_TIME_AFTER_BLIP_NO_EDIT) * 1000);
-    sendable = Math.min(sendable, blipVersionView.getFirstEditedTimestamp()
+  private void calculateBlipTimeToBecomeSendable(BlipVersionView b) {
+    long sendable;
+    if (b.getLastChangedTimestamp() > b.getLastSubmittedTimestamp()) {
+      // Someone is still editing:
+      sendable = b.getLastChangedTimestamp() + config.getLong(SEND_TIME_AFTER_BLIP_NO_EDIT) * 1000;
+    } else {
+      // Submitted by all editing parties:
+      sendable = b.getLastSubmittedTimestamp() + config.getLong(SEND_TIME_AFTER_BLIP_SUBMIT) * 1000;
+    }
+    // If constantly edited:
+    sendable = Math.min(sendable, b.getFirstEditedTimestamp()
         + config.getLong(SEND_TIME_IF_CONSTANTLY_EDITED) * 1000);
-    return sendable;
-    // TODO(dlux): Add blip parent check (see description at the top) to decide
-    //   on sending a blip.
+    b.setTimeToBecomeSendable(sendable);
   }
-  
 
 }

@@ -49,7 +49,7 @@ public class WaveletView {
   private long lastEmailSentTime;
 
   @Persistent
-  private Long timeForSending;
+  private Long timeForSending;  // nullable, null means: infinity
   
   public WaveletView(String waveletId, String email) {
     this();

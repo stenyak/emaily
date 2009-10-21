@@ -103,13 +103,13 @@ public class DebugHelper {
     printTimestamp(sb, "Time for sending:     ", waveletView.getTimeForSending());
     sb.append("Unsent blips: \n");
     for (BlipVersionView b : waveletView.getUnsentBlips()) {
-      sb.append("- Blip Id:").append(b.getBlipId()).append('\n');
-      sb.append("  Blip version:").append(b.getVersion()).append('\n');
+      sb.append("- Blip Id: ").append(b.getBlipId()).append('\n');
+      sb.append("  Blip version: ").append(b.getVersion()).append('\n');
       // sb.append("  Participants:").append(b.getParticipants(), ", ").append('\n');
-      printTimestamp(sb, "  First edited:    ", b.getFirstEditedTimestamp());
-      printTimestamp(sb, "  Last changed:    ", b.getLastChangedTimestamp());
-      printTimestamp(sb, "  Last submitted:  ", b.getLastSubmittedTimestamp());
-      printTimestamp(sb, "  Becomes sendable:", b.getTimeToBecomeSendable());
+      printTimestamp(sb, "  First edited:     ", b.getFirstEditedTimestamp());
+      printTimestamp(sb, "  Last changed:     ", b.getLastChangedTimestamp());
+      printTimestamp(sb, "  Last submitted:   ", b.getLastSubmittedTimestamp());
+      printTimestamp(sb, "  Becomes sendable: ", b.getTimeToBecomeSendable());
       sb.append("  Content:").append(b.getContent()).append('\n');
     }
   }

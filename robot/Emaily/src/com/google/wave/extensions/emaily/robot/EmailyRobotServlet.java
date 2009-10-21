@@ -159,7 +159,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       still_editing = true;
       break;
     }
-    emailScheduler.SetBlipViewTimes(blipVersionView, still_editing);
+    emailScheduler.updateBlipViewTimestamps(blipVersionView, still_editing);
   }
 
   /**
