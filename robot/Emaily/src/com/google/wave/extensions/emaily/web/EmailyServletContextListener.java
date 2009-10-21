@@ -10,7 +10,7 @@ import javax.servlet.ServletContextEvent;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.servlet.GuiceServletContextListener;
-import com.google.wave.extensions.emaily.data.DataAccessModule;
+import com.google.wave.extensions.emaily.data.JDODataAccessModule;
 
 public class EmailyServletContextListener extends GuiceServletContextListener {
   private Properties properties;
@@ -25,7 +25,7 @@ public class EmailyServletContextListener extends GuiceServletContextListener {
   protected Injector getInjector() {
     EmailyServletModule servletModule = new AppspotEmailyServletModule();
     servletModule.setServletProperties(properties);
-    return Guice.createInjector(servletModule, new DataAccessModule());
+    return Guice.createInjector(new JDODataAccessModule(), servletModule);
   }
 
   /**

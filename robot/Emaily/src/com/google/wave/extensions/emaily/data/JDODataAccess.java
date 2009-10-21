@@ -3,6 +3,7 @@ package com.google.wave.extensions.emaily.data;
 import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
+import javax.jdo.Transaction;
 
 import com.google.inject.Inject;
 import com.google.inject.servlet.RequestScoped;
@@ -11,6 +12,7 @@ import com.google.inject.servlet.RequestScoped;
 public class JDODataAccess implements DataAccess {
   private final PersistenceManagerFactory pmf;
   private PersistenceManager pm = null;
+  private Transaction tx = null;
 
   @Inject
   public JDODataAccess(PersistenceManagerFactory pmf) {
@@ -38,13 +40,21 @@ public class JDODataAccess implements DataAccess {
 
   /**
    * Get the persistence manager.
-   * @return The persistence manager. If it is not exist, it creates one.
+   * 
+   * @return The persistence manager. If it is not exist, it creates one, and creates a new
+   *         transaction for that.
    */
   private PersistenceManager getPm() {
     if (pm == null) {
-      pm = pmf.getPersistenceManager();
+      createPersistenceManager();
     }
     return pm;
+  }
+
+  private void createPersistenceManager() {
+    pm = pmf.getPersistenceManager();
+    tx = pm.currentTransaction();
+    tx.begin();
   }
 
   /**
@@ -52,9 +62,26 @@ public class JDODataAccess implements DataAccess {
    */
   @Override
   public void close() {
+    if (tx != null && tx.isActive()) {
+      tx.commit();
+    }
+    tx = null;
+
     if (pm != null) {
       pm.close();
     }
     pm = null;
+  }
+
+  /**
+   * Rolls back the transaction and closes the persistence manager.
+   */
+  @Override
+  public void rollback() {
+    if (tx != null && tx.isActive()) {
+      tx.rollback();
+    }
+    tx = null;
+    close();
   }
 }

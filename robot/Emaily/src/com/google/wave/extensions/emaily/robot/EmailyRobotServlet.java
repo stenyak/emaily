@@ -56,7 +56,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   @Inject
   public EmailyRobotServlet(EmailSender emailSender, HostingProvider hostingProvider,
       Provider<HttpServletRequest> reqProvider, PersistenceManagerFactory pmFactory, Logger logger,
-      EmailScheduler emailScheduler, DebugHelper debugHelper, Provider<DataAccess> dataAccessProvider) {
+      EmailScheduler emailScheduler, DebugHelper debugHelper,
+      Provider<DataAccess> dataAccessProvider) {
     this.emailSender = emailSender;
     this.hostingProvider = hostingProvider;
     this.reqProvider = reqProvider;
@@ -89,6 +90,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
 
   /**
    * Process modifications for the wavelet changes and schedule sending.
+   * 
    * @param bundle The robot message bundle.
    * @param email The email of the user.
    */
@@ -97,14 +99,17 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       String waveletId = bundle.getWavelet().getWaveletId();
       WaveletView waveletView = dataAccessProvider.get().getWaveletView(waveletId, email);
       if (waveletView == null) {
-        waveletView = new WaveletView(email, waveletId);
+        waveletView = new WaveletView(waveletId, email);
+        dataAccessProvider.get().persistWaveletView(waveletView);
       }
       for (Event e : bundle.getEvents()) {
         processBlipEvent(waveletView, e);
       }
       emailScheduler.calculateWaveletViewNextSendTime(waveletView);
       logger.info(debugHelper.printWaveletViewInfo(waveletView));
-      dataAccessProvider.get().persistWaveletView(waveletView);
+    } catch (RuntimeException e) {
+      dataAccessProvider.get().rollback();
+      throw e;
     } finally {
       dataAccessProvider.get().close();
     }
@@ -128,6 +133,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     if (blipVersionView == null) {
       blipVersionView = new BlipVersionView();
       blipVersionView.setBlipId(blip.getBlipId());
+      blipVersionView.setParentId(waveletView.getId());
     }
     // Update the blip version to the latest
     blipVersionView.setVersion(blip.getVersion());
@@ -147,7 +153,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     }
     emailScheduler.SetBlipViewTimes(blipVersionView, still_editing);
   }
-  
+
   /**
    * Handle when a blip is submitted. Currenlty it sends the blip in email
    * immediately.

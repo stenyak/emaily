@@ -17,6 +17,10 @@ public class BlipVersionView {
   @Persistent
   @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")
   private String id;
+  
+  @Persistent
+  @Extension(vendorName="datanucleus", key="gae.parent-pk", value="true")
+  private String parentId;
 
   @Persistent
   private String blipId;
@@ -41,6 +45,14 @@ public class BlipVersionView {
   
   @NotPersistent
   private long timeToBecomeSendable;
+  
+  public String getParentId() {
+    return parentId;
+  }
+  
+  public void setParentId(String parentId) {
+    this.parentId = parentId;
+  }
 
   public String getBlipId() {
     return blipId;

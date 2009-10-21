@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.NotPersistent;
+import javax.jdo.annotations.Order;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
@@ -36,9 +38,11 @@ public class WaveletView {
   private String emailAddressToken;
   
   @Persistent
+  @Order(extensions = @Extension(vendorName="datanucleus", key="list-ordering", value="id asc"))
   private List<BlipVersionView> unsentBlips;
   
   @Persistent
+  @Order(extensions = @Extension(vendorName="datanucleus", key="list-ordering", value="id asc"))
   private List<BlipVersionView> sentBlips;
   
   @Persistent
@@ -76,6 +80,10 @@ public class WaveletView {
   
   public void setEmail(String email) {
     setId(getWaveletId(), email);
+  }
+  
+  public String getId() {
+    return id;
   }
   
   private void setId(String waveletId, String email) {

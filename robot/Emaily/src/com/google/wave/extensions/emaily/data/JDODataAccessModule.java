@@ -9,8 +9,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 
-public class DataAccessModule extends AbstractModule {
-  private static final Logger logger = Logger.getLogger(DataAccessModule.class.getSimpleName());
+public class JDODataAccessModule extends AbstractModule {
+  private static final Logger logger = Logger.getLogger(JDODataAccessModule.class.getSimpleName());
 
   @Override
   protected void configure() {
@@ -18,12 +18,12 @@ public class DataAccessModule extends AbstractModule {
   }
 
   // PersistenceManagerFactory for JDO
-  @Singleton @Provides
+  @Singleton
+  @Provides
   public PersistenceManagerFactory getPersistenceManagerFactory() {
     logger.info("Creating a new persistenceManagerFactory");
     System.setProperty("appengine.orm.disable.duplicate.pmf.exception", "true");
     return JDOHelper.getPersistenceManagerFactory("transactions-optional");
   }
-
 
 }

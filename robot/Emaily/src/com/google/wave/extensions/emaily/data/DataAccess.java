@@ -1,5 +1,9 @@
 package com.google.wave.extensions.emaily.data;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 public interface DataAccess {
 
@@ -20,8 +24,15 @@ public interface DataAccess {
   public void persistWaveletView(WaveletView waveletView);
 
   /**
-   * Close data access session. It has to be called at the end of a request processing if the
+   * Rolls back the current transaction.
+   */
+  public void rollback();
+
+  /**
+   * Close data access session. It commits the transaction if it is still active.
+   * It has to be called at the end of a request processing if the
    * request manipulated any data.
    */
   public void close();
+
 }
