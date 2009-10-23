@@ -35,7 +35,7 @@ public interface HostingProvider {
    * @param address The recipient address of the incoming email.
    * @return The Wave participant ID.
    */
-  public String decodeIncomingEmailAddress(String address);
+  public String getWaveParticipantIdFromIncomingEmailAddress(String address);
 
   /**
    * Encodes the address of an Email participant as a proxyingFor Wave participant ID.
@@ -45,6 +45,6 @@ public interface HostingProvider {
    * @param address The email participant address.
    * @return The Wave participant ID proxying for the email participant.
    */
-  public String encodeEmailParticipantAsWaveParticipantId(String address);
+  public String getRobotProxyForFromEmailAddress(String address);
   
 }

@@ -45,12 +45,9 @@ public class AppspotHostingProvider implements HostingProvider {
     logger.info("AppEngineHostingProvider initialized. AppName: " + appName + ", AppVersion: "
         + appVersion);
 
-    // For now, it seems AppEngine only routes incoming email sent to
-    // "anything@app-id.appspotmail.com".
     // This pattern recognizes "anything+anything@app-id.appspotmail.com".
-    // The '+' can be escaped for HTML/HTTP as "%2b".
-    incomingEmailAddressPattern = Pattern.compile("(.*)(?:\\+|%2[Bb])(.*)@" + appName
-        + ".appspotmail.com");
+    // For now, it seems AppEngine only routes incoming email sent to these address forms.
+    incomingEmailAddressPattern = Pattern.compile("(.*)\\+(.*)@" + appName + ".appspotmail.com");
   }
 
   @Override
@@ -80,7 +77,7 @@ public class AppspotHostingProvider implements HostingProvider {
   }
 
   @Override
-  public String decodeIncomingEmailAddress(String address) {
+  public String getWaveParticipantIdFromIncomingEmailAddress(String address) {
     Matcher m = incomingEmailAddressPattern.matcher(address);
     if (!m.matches())
       return null;
@@ -88,7 +85,7 @@ public class AppspotHostingProvider implements HostingProvider {
   }
 
   @Override
-  public String encodeEmailParticipantAsWaveParticipantId(String address) {
+  public String getRobotProxyForFromEmailAddress(String address) {
     Mailbox mailbox = Mailbox.parse(address);
     return String.format("%s+%s+%s@appspot.com", appName, mailbox.getLocalPart(), mailbox
         .getDomain());

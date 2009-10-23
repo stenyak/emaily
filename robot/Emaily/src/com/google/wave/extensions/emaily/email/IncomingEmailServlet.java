@@ -1,9 +1,10 @@
-package com.google.wave.extensions.emaily.robot;
+package com.google.wave.extensions.emaily.email;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +26,7 @@ import org.apache.james.mime4j.message.Message;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.config.HostingProvider;
-import com.google.wave.extensions.emaily.email.PersistentEmail;
+import com.google.wave.extensions.emaily.data.PersistentEmail;
 
 /**
  * Processes incoming emails.
@@ -107,8 +108,10 @@ public class IncomingEmailServlet extends HttpServlet {
    * @param input The request input stream containing the email content.
    */
   public void processIncomingRequest(String uri, InputStream input) throws IOException {
-    final String mainEmailRecipient = uri.substring(REQUEST_URI_PREFIX.length());
-    final String mainWaveRecipient = hostingProvider.decodeIncomingEmailAddress(mainEmailRecipient);
+    final String mainEmailRecipient = URLDecoder.decode(uri.substring(REQUEST_URI_PREFIX.length()),
+        "utf8");
+    final String mainWaveRecipient = hostingProvider
+        .getWaveParticipantIdFromIncomingEmailAddress(mainEmailRecipient);
     if (mainWaveRecipient == null) {
       logger.info("Discarding incoming email to invalid recipient: " + mainEmailRecipient);
       return;
@@ -124,17 +127,18 @@ public class IncomingEmailServlet extends HttpServlet {
       for (Address to : message.getTo()) {
         if (to instanceof Mailbox) {
           final Mailbox emailRecipient = (Mailbox) to;
-          final String waveRecipient = hostingProvider.decodeIncomingEmailAddress(emailRecipient
-              .getAddress());
+          final String waveRecipient = hostingProvider
+              .getWaveParticipantIdFromIncomingEmailAddress(emailRecipient.getAddress());
           if (waveRecipient != null)
             waveParticipants.add(waveRecipient);
           else
-            waveParticipants.add(hostingProvider
-                .encodeEmailParticipantAsWaveParticipantId(emailRecipient.getAddress()));
+            waveParticipants.add(hostingProvider.getRobotProxyForFromEmailAddress(emailRecipient
+                .getAddress()));
         }
         // TODO(taton) Handle groups of addresses.
       }
     }
+    // TODO(taton) Handle cc'ed addresses as well.
 
     final PersistentEmail email = new PersistentEmail(message.getMessageId(), waveParticipants,
         content);

@@ -32,9 +32,9 @@ import com.google.wave.api.StyledText;
 import com.google.wave.api.TextView;
 import com.google.wave.api.Wavelet;
 import com.google.wave.extensions.emaily.config.HostingProvider;
+import com.google.wave.extensions.emaily.data.PersistentEmail;
 import com.google.wave.extensions.emaily.email.EmailSender;
 import com.google.wave.extensions.emaily.email.MailUtil;
-import com.google.wave.extensions.emaily.email.PersistentEmail;
 
 @Singleton
 public class EmailyRobotServlet extends AbstractRobotServlet {
@@ -79,8 +79,9 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private void handleBlipSubmitted(RobotMessageBundle bundle, Event event) {
     // Do not try to send an email if we are not proxying for anyone.
     JSONObject json = (JSONObject) reqProvider.get().getAttribute("jsonObject");
-    if (!json.has("proxyingFor"))
+    if (!json.has("proxyingFor")) {
       return;
+    }
     String recipient;
     try {
       String proxyingFor = json.getString("proxyingFor");
@@ -88,9 +89,9 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     } catch (JSONException e) {
       throw new RuntimeException("JSON error", e);
     }
-    if (recipient == null)
+    if (recipient == null) {
       return;
-
+    }
     final Wavelet wavelet = bundle.getWavelet();
     final Blip blip = event.getBlip();
     final String emailSubject = wavelet.getTitle();

@@ -1,13 +1,11 @@
-package com.google.wave.extensions.emaily.email;
+package com.google.wave.extensions.emaily.data;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.util.Set;
 
-import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
-import javax.jdo.annotations.Key;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
@@ -20,17 +18,13 @@ import com.google.appengine.api.datastore.Blob;
  * 
  * @author taton
  */
-@PersistenceCapable(identityType = IdentityType.DATASTORE)
+@PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class PersistentEmail implements Serializable {
 
   private static final long serialVersionUID = 8472461757525198617L;
 
-  @PrimaryKey
-  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private Long id;
-
   /** The Message-ID header. */
-  @Key
+  @PrimaryKey
   @Persistent
   private String messageId;
 
