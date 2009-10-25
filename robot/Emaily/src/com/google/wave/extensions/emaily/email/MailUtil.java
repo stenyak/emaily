@@ -68,8 +68,7 @@ public class MailUtil {
         return false;
       }
     } else {
-      sb.append("Unknown content type: [").append(entity.getClass().getName())
-          .append("]\n");
+      sb.append("Unknown content type: [").append(entity.getClass().getName()).append("]\n");
       return false;
     }
   }
