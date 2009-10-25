@@ -42,9 +42,6 @@ public class JDODataAccess implements DataAccess {
     this.pmf = pmf;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   public WaveletView getWaveletView(String waveletId, String email) {
     try {
       return getPm().getObjectById(WaveletView.class, WaveletView.buildId(waveletId, email));
@@ -53,9 +50,6 @@ public class JDODataAccess implements DataAccess {
     }
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void persistWaveletView(WaveletView waveletView) {
     getPm().makePersistent(waveletView);
@@ -81,7 +75,7 @@ public class JDODataAccess implements DataAccess {
     if (tx != null && tx.isActive()) {
       tx.commit();
     }
-    closeTransactionandPersistenceManager();
+    close();
   }
 
   @Override
@@ -89,13 +83,13 @@ public class JDODataAccess implements DataAccess {
     if (tx != null && tx.isActive()) {
       tx.rollback();
     }
-    closeTransactionandPersistenceManager();
+    close();
   }
 
   /**
    * Delete the transaction and closes the persistence manager.
    */
-  private void closeTransactionandPersistenceManager() {
+  private void close() {
     tx = null;
 
     if (pm != null) {

@@ -51,10 +51,10 @@ import com.google.wave.extensions.emaily.data.WaveletView;
 @Singleton
 public class EmailScheduler {
   // Property key names
-  public static final String SEND_TIME_AFTER_BLIP_SUBMIT = "schedule.send_time_after_blip_submit";
-  public static final String SEND_TIME_AFTER_BLIP_NO_EDIT = "schedule.send_time_after_blip_submit_no_edit";
-  public static final String SEND_TIME_IF_CONSTANTLY_EDITED = "schedule.send_time_if_constantly_edited";
-  public static final String MIN_EMAIL_SEND_TIME = "schedule.min_email_send_time";
+  private static final String SEND_TIME_AFTER_BLIP_SUBMIT = "schedule.send_time_after_blip_submit";
+  private static final String SEND_TIME_AFTER_BLIP_NO_EDIT = "schedule.send_time_after_blip_submit_no_edit";
+  private static final String SEND_TIME_IF_CONSTANTLY_EDITED = "schedule.send_time_if_constantly_edited";
+  private static final String MIN_EMAIL_SEND_TIME = "schedule.min_email_send_time";
 
   private static String[] requiredLongProperties = { SEND_TIME_AFTER_BLIP_SUBMIT,
       SEND_TIME_AFTER_BLIP_NO_EDIT, SEND_TIME_IF_CONSTANTLY_EDITED, MIN_EMAIL_SEND_TIME };

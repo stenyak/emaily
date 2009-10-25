@@ -21,6 +21,7 @@ import org.apache.james.mime4j.message.Entity;
 import org.apache.james.mime4j.message.Multipart;
 import org.apache.james.mime4j.message.TextBody;
 
+import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.util.StrUtil;
 
 /**
@@ -28,6 +29,7 @@ import com.google.wave.extensions.emaily.util.StrUtil;
  * 
  * @author taton
  */
+@Singleton
 public class MailUtil {
   /**
    * Formats a MIME message into a text-only message.

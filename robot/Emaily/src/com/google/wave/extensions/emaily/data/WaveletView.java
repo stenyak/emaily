@@ -111,20 +111,13 @@ public class WaveletView {
     id = buildId(waveletId, email);
   }
   
-  // utility functions  
+  // utility functions for the Id field.
   public static String buildId(String waveletId, String email) {
     return waveletId + ' ' + email;
   }
 
   private static String[] splitId(String id) {
-    if (id == null) {
-      return new String[] { "", "" };
-    }
-    int at = id.indexOf(' ');
-    if (at < 0) {
-      return new String[] { id, "" };
-    }
-    return new String[] { id.substring(0, at), id.substring(at + 1) };
+    return id.split(" ", 2);
   }
 
   private static String generateNewEmailAddressToken() {
