@@ -1,13 +1,12 @@
 package com.google.wave.extensions.emaily.email;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URLDecoder;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -46,31 +45,18 @@ public class IncomingEmailServlet extends HttpServlet {
    * @throws IOException
    */
   public static byte[] readInputStream(InputStream is) throws IOException {
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
     final int BUFFER_SIZE = 1024;
-    List<byte[]> buffers = new ArrayList<byte[]>();
-    int size = 0;
-    // First read the input buffer into a list a fixed size buffers.
+    byte[] buffer = new byte[BUFFER_SIZE];
     while (true) {
-      byte[] buffer = new byte[BUFFER_SIZE];
       int bytesRead = is.read(buffer);
       if (bytesRead == -1) // End of file
         break;
-      size += bytesRead;
-      buffers.add(buffer);
+      os.write(buffer, 0, bytesRead);
     }
-    // Then concatenate the buffers into a single complete byte array.
-    byte[] data = new byte[size];
-    int offset = 0;
-    int remaining = size;
-    for (byte[] buffer : buffers) {
-      int bytesToCopy = Math.min(BUFFER_SIZE, remaining);
-      System.arraycopy(buffer, 0, data, offset, bytesToCopy);
-      remaining -= bytesToCopy;
-      offset += bytesToCopy;
-    }
-    return data;
+    return os.toByteArray();
   }
-
+  
   private Logger logger = Logger.getLogger(IncomingEmailServlet.class.getName());
 
   // Injected dependencies
