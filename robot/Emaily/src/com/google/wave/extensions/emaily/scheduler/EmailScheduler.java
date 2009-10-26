@@ -50,7 +50,7 @@ import com.google.wave.extensions.emaily.data.WaveletView;
  */
 @Singleton
 public class EmailScheduler {
-  // Property key names
+  // Property key names for tuning email scheduling. The values are in seconds.
   private static final String SEND_TIME_AFTER_BLIP_SUBMIT = "schedule.send_time_after_blip_submit";
   private static final String SEND_TIME_AFTER_BLIP_NO_EDIT = "schedule.send_time_after_blip_submit_no_edit";
   private static final String SEND_TIME_IF_CONSTANTLY_EDITED = "schedule.send_time_if_constantly_edited";
@@ -74,7 +74,7 @@ public class EmailScheduler {
    * @param blipVersionView The blipVersionView to change.
    * @param still_editing If a user is editing the blip or not.
    */
-  public void updateBlipViewTimestamps(BlipVersionView blipVersionView, Boolean still_editing) {
+  public void updateBlipViewTimestamps(BlipVersionView blipVersionView, boolean still_editing) {
     long time = Calendar.getInstance().getTimeInMillis();
     if (blipVersionView.getFirstEditedTimestamp() == 0) {
       blipVersionView.setFirstEditedTimestamp(time);

@@ -108,7 +108,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     }
     // New behavior:
     String proxyingFor = getProxyingFor();
-    if (proxyingFor != null) {
+    if (!proxyingFor.isEmpty()) {
       String email = hostingProvider.getEmailAddressFromRobotProxyFor(proxyingFor);
       processWaveletViewModifications(bundle, email);
     }
@@ -199,12 +199,13 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   /**
    * Returns the "proxyingFor" argument of the Wave Robot query for the currently processed request.
    * 
-   * @return The value of the "proxyingFor" field.
+   * @return The value of the "proxyingFor" field, or if it does not exist, it returns an empty string.
    */
   private String getProxyingFor() {
     JSONObject json = (JSONObject) reqProvider.get().getAttribute("jsonObject");
     try {
-      return json.getString("proxyingFor");
+      String proxyingFor = json.getString("proxyingFor");
+      return proxyingFor == null ? "" : proxyingFor;
     } catch (JSONException e) {
       throw new RuntimeException("JSON error", e);
     }
@@ -220,7 +221,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private void sendEmailNow(RobotMessageBundle bundle, Event event) {
     // Do not try to send an email if we are not proxying for anyone.
     String proxyingFor = getProxyingFor();
-    if (proxyingFor == null) {
+    if (proxyingFor.isEmpty()) {
       return;
     }
     String recipient = hostingProvider.getEmailAddressFromRobotProxyFor(proxyingFor);
