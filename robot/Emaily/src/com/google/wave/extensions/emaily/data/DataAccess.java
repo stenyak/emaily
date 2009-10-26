@@ -45,7 +45,7 @@ public interface DataAccess {
   public void rollback();
 
   /**
-   * Commits changes in the current transaciton. Following operations will open a new transaction.
+   * Commits changes in the current transaction. Following operations will open a new transaction.
    */
   public void commit();
 

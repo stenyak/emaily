@@ -32,7 +32,8 @@ import javax.jdo.annotations.PrimaryKey;
  */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class BlipVersionView {
-  // Id of the blip view: it is composed of the parent WaveletView id, plus the blip id, plus the version.
+  // Id of the blip view: it is composed of the parent WaveletView id, plus the blip id, plus the
+  // version.
   @SuppressWarnings("unused")
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")
