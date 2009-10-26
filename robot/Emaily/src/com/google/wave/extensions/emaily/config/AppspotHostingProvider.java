@@ -1,3 +1,17 @@
+/* Copyright (c) 2009 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.google.wave.extensions.emaily.config;
 
 import java.util.StringTokenizer;
@@ -19,10 +33,11 @@ import com.google.inject.Singleton;
  */
 @Singleton
 public class AppspotHostingProvider implements HostingProvider {
+  // Configuration properties
   private static final String PROD_VERSION = "hosting.appspot.prod_version";
+  private static final String[] requiredProperties = { PROD_VERSION };
 
-  private final Logger logger;
-  private final EmailyConfig emailyConfig;
+  // Application name and version
   private final String appName;
   private final String appVersion;
 
@@ -32,11 +47,15 @@ public class AppspotHostingProvider implements HostingProvider {
    */
   private final Pattern incomingEmailAddressPattern;
 
+  // Injected dependencies
+  private final EmailyConfig emailyConfig;
+
   @Inject
   AppspotHostingProvider(EmailyConfig emailyConfig, Logger logger) {
+    // Initialize properties
     this.emailyConfig = emailyConfig;
-    this.logger = logger;
-
+    emailyConfig.checkRequiredProperties(requiredProperties);
+    
     // Set AppEngine properties from the environment.
     appName = ApiProxy.getCurrentEnvironment().getAppId();
     StringTokenizer versionTokenizer = new StringTokenizer(ApiProxy.getCurrentEnvironment()
@@ -59,7 +78,7 @@ public class AppspotHostingProvider implements HostingProvider {
     StringBuilder email = new StringBuilder();
     email.append(waveParticipantId.substring(0, at)).append('+').append(
         waveParticipantId.substring(at + 1)).append('@');
-    if (!appVersion.equals(emailyConfig.get(PROD_VERSION))) {
+    if (!isProductionVersion()) {
       // TODO(dlux): this is currently not working...
       // email.append(appVersion).append(".latest.");
     }
@@ -69,6 +88,9 @@ public class AppspotHostingProvider implements HostingProvider {
 
   @Override
   public String getEmailAddressFromRobotProxyFor(String proxyingFor) {
+    if (proxyingFor == null) {
+      return null;
+    }
     int at = proxyingFor.lastIndexOf('+');
     if (at < 0) {
       return null;
@@ -89,6 +111,27 @@ public class AppspotHostingProvider implements HostingProvider {
     Mailbox mailbox = Mailbox.parse(address);
     return String.format("%s+%s+%s@appspot.com", appName, mailbox.getLocalPart(), mailbox
         .getDomain());
+  }
+
+  @Override
+  public String getRobotWaveParticipantIdFromEmailAddress(String email) {
+    int at = email.lastIndexOf('@');
+    if (at < 0) {
+      throw new RuntimeException("Invalid email address: " + email);
+    }
+    StringBuilder waveParticipantId = new StringBuilder();
+    waveParticipantId.append(email.substring(0, at)).append('+').append(email.substring(at + 1))
+        .append('@');
+    if (!isProductionVersion()) {
+      waveParticipantId.append(appVersion).append(".latest.");
+    }
+    waveParticipantId.append(appName).append(".appspot.com");
+    return waveParticipantId.toString();
+  }
+
+  @Override
+  public boolean isProductionVersion() {
+    return appVersion.equals(emailyConfig.get(PROD_VERSION));
   }
 
 }

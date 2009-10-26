@@ -12,24 +12,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.wave.extensions.emaily.web;
+package com.google.wave.extensions.emaily.data;
 
-import com.google.wave.extensions.emaily.config.AppspotHostingProvider;
-import com.google.wave.extensions.emaily.config.HostingProvider;
-import com.google.wave.extensions.emaily.email.IncomingEmailServlet;
+import javax.jdo.JDOHelper;
+import javax.jdo.PersistenceManagerFactory;
+
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 
 /**
- * Guice module which installs appspot-specific handlers and adds
- * appspot-specific configuration.
+ * Guice Module for configuring data access.
  * 
  * @author dlux
  * 
  */
-public class AppspotEmailyServletModule extends EmailyServletModule {
+public class JDODataAccessModule extends AbstractModule {
   @Override
-  protected void configureServlets() {
-    super.configureServlets();
-    serve("/_ah/mail/*").with(IncomingEmailServlet.class);
-    bind(HostingProvider.class).to(AppspotHostingProvider.class);
+  protected void configure() {
+    bind(DataAccess.class).to(JDODataAccess.class);
   }
+
+  // PersistenceManagerFactory for JDO
+  @Singleton
+  @Provides
+  public PersistenceManagerFactory getPersistenceManagerFactory() {
+    return JDOHelper.getPersistenceManagerFactory("transactions-optional");
+  }
+
 }
