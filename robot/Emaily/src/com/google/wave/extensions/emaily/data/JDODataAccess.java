@@ -14,9 +14,13 @@
  */
 package com.google.wave.extensions.emaily.data;
 
+import java.util.Calendar;
+import java.util.List;
+
 import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
+import javax.jdo.Query;
 import javax.jdo.Transaction;
 
 import com.google.inject.Inject;
@@ -96,5 +100,11 @@ public class JDODataAccess implements DataAccess {
       pm.close();
     }
     pm = null;
+  }
+
+  @Override
+  public List<?> getWaveletIdsToSend() {
+    Query query = getPm().newQuery("select id from " + WaveletView.class.getName() + " where timeForSending < :now ");
+    return (List<?>) query.execute(Calendar.getInstance().getTimeInMillis());
   }
 }

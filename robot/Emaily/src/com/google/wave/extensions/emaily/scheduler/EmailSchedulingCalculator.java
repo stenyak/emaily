@@ -15,11 +15,14 @@
 package com.google.wave.extensions.emaily.scheduler;
 
 import java.util.Calendar;
+import java.util.List;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.config.EmailyConfig;
 import com.google.wave.extensions.emaily.data.BlipVersionView;
+import com.google.wave.extensions.emaily.data.DataAccess;
 import com.google.wave.extensions.emaily.data.WaveletView;
 
 // The idea on the basic sending schedule is the following:
@@ -49,7 +52,7 @@ import com.google.wave.extensions.emaily.data.WaveletView;
  * @author dlux
  */
 @Singleton
-public class EmailScheduler {
+public class EmailSchedulingCalculator {
   // Property key names for tuning email scheduling. The values are in seconds.
   private static final String SEND_TIME_AFTER_BLIP_SUBMIT = "schedule.send_time_after_blip_submit";
   private static final String SEND_TIME_AFTER_BLIP_NO_EDIT = "schedule.send_time_after_blip_submit_no_edit";
@@ -61,10 +64,12 @@ public class EmailScheduler {
 
   // Injected dependencies
   private final EmailyConfig config;
+  private final Provider<DataAccess> dataAccessProvider;
 
   @Inject
-  public EmailScheduler(EmailyConfig config) {
+  public EmailSchedulingCalculator(EmailyConfig config, Provider<DataAccess> dataAccessProvider) {
     this.config = config;
+    this.dataAccessProvider = dataAccessProvider;
     config.checkRequiredLongProperties(requiredLongProperties);
   }
 
@@ -123,5 +128,4 @@ public class EmailScheduler {
         + config.getLong(SEND_TIME_IF_CONSTANTLY_EDITED) * 1000);
     b.setTimeToBecomeSendable(sendable);
   }
-
 }

@@ -14,6 +14,8 @@
  */
 package com.google.wave.extensions.emaily.data;
 
+import java.util.List;
+
 /**
  * Data access interface for emaily data objects.
  * 
@@ -48,5 +50,10 @@ public interface DataAccess {
    * Commits changes in the current transaction. Following operations will open a new transaction.
    */
   public void commit();
+
+  /**
+   * @return The list of wavelet Ids that are scheduled to be sent.
+   */
+  public List<?> getWaveletIdsToSend();
 
 }

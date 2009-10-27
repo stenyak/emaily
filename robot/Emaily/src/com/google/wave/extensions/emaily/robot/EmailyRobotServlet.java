@@ -53,7 +53,7 @@ import com.google.wave.extensions.emaily.data.PersistentEmail;
 import com.google.wave.extensions.emaily.data.WaveletView;
 import com.google.wave.extensions.emaily.email.EmailSender;
 import com.google.wave.extensions.emaily.email.MailUtil;
-import com.google.wave.extensions.emaily.scheduler.EmailScheduler;
+import com.google.wave.extensions.emaily.scheduler.EmailSchedulingCalculator;
 import com.google.wave.extensions.emaily.util.DebugHelper;
 /**
  * Servlet for serving the Wave robot requests.
@@ -71,7 +71,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private final Provider<HttpServletRequest> reqProvider;
   private final PersistenceManagerFactory pmFactory;
   private final Logger logger;
-  private final EmailScheduler emailScheduler;
+  private final EmailSchedulingCalculator emailSchedulingCalculator;
   private final DebugHelper debugHelper;
   private final Provider<DataAccess> dataAccessProvider;
   private final MailUtil mailUtil;
@@ -81,14 +81,14 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   @Inject
   public EmailyRobotServlet(EmailSender emailSender, HostingProvider hostingProvider,
       Provider<HttpServletRequest> reqProvider, PersistenceManagerFactory pmFactory, Logger logger,
-      EmailScheduler emailScheduler, DebugHelper debugHelper,
+      EmailSchedulingCalculator emailSchedulingCalculator, DebugHelper debugHelper,
       Provider<DataAccess> dataAccessProvider, MailUtil mailUtil) {
     this.emailSender = emailSender;
     this.hostingProvider = hostingProvider;
     this.reqProvider = reqProvider;
     this.pmFactory = pmFactory;
     this.logger = logger;
-    this.emailScheduler = emailScheduler;
+    this.emailSchedulingCalculator = emailSchedulingCalculator;
     this.debugHelper = debugHelper;
     this.dataAccessProvider = dataAccessProvider;
     this.mailUtil = mailUtil;
@@ -138,7 +138,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       }
       
       // Calculate the next send time
-      emailScheduler.calculateWaveletViewNextSendTime(waveletView);
+      emailSchedulingCalculator.calculateWaveletViewNextSendTime(waveletView);
       
       // Prints the debug info
       logger.info(debugHelper.printWaveletViewInfo(waveletView));
@@ -193,7 +193,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       still_editing = true;
       break;
     }
-    emailScheduler.updateBlipViewTimestamps(blipVersionView, still_editing);
+    emailSchedulingCalculator.updateBlipViewTimestamps(blipVersionView, still_editing);
   }
 
   /**
