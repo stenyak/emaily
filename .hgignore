@@ -2,4 +2,5 @@
 \.swp$
 \.orig$
 eclipse-workspace
+workspace
 WEB-INF/classes/.*\.class$
