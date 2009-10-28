@@ -75,4 +75,13 @@ public interface HostingProvider {
    * @return True if the currently running robot is a production version
    */
   public boolean isProductionVersion();
+
+  /**
+   * Returns a reply-to email address of a wavelet.
+   * 
+   * @param emailAddressToken The generated email address token for the wavelet view.
+   * @return The email address which can be used as an outgoing email address, and which
+   *         can be replied to.
+   */
+  public String getWaveletEmailAddress(String emailAddressToken);
 }

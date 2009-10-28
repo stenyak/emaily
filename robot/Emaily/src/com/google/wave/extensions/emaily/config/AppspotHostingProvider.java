@@ -134,4 +134,9 @@ public class AppspotHostingProvider implements HostingProvider {
     return appVersion.equals(emailyConfig.get(PROD_VERSION));
   }
 
+  @Override
+  public String getWaveletEmailAddress(String emailAddressToken) {
+    return emailAddressToken + "@" + appName + ".appspotmail.com";
+  }
+
 }

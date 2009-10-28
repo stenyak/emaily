@@ -27,6 +27,14 @@ public interface DataAccess {
   /**
    * Returns an existing WaveletView from the database.
    * 
+   * @param id The wavelet view id.
+   * @return A wavelet view.
+   */
+  public WaveletView getWaveletView(String id);
+
+  /**
+   * Returns an existing WaveletView from the database.
+   * 
    * @param waveletId The wavelet Id
    * @param email The email of the user
    * @return The existing WaveletView, or <code>null</code> if it does not exist.

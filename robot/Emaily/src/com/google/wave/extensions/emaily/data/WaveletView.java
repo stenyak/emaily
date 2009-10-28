@@ -53,11 +53,11 @@ public class WaveletView {
   private String emailAddressToken;
   
   @Persistent
-  @Order(extensions = @Extension(vendorName="datanucleus", key="list-ordering", value="id asc"))
+  @Order(extensions = @Extension(vendorName="datanucleus", key="list-ordering", value="firstEditedTimestamp asc"))
   private List<BlipVersionView> unsentBlips;
   
   @Persistent
-  @Order(extensions = @Extension(vendorName="datanucleus", key="list-ordering", value="id asc"))
+  @Order(extensions = @Extension(vendorName="datanucleus", key="list-ordering", value="firstEditedTimestamp asc"))
   private List<BlipVersionView> sentBlips;
   
   @Persistent
@@ -165,14 +165,14 @@ public class WaveletView {
     this.lastEmailSentTime = lastEmailSentTime;
   }
 
-  public Long getTimeForSending() {
+  public long getTimeForSending() {
     if (timeForSending == null) {
       return Long.MAX_VALUE;
     }
     return timeForSending;
   }
   
-  public void setTimeForSending(Long timeForSending) {
+  public void setTimeForSending(long timeForSending) {
     if (timeForSending == Long.MAX_VALUE) {
       this.timeForSending = null;
     } else {

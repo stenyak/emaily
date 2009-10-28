@@ -16,6 +16,7 @@
 package com.google.wave.extensions.emaily.scheduler;
 
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -25,7 +26,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
+import com.google.wave.extensions.emaily.config.EmailyConfig;
 import com.google.wave.extensions.emaily.data.DataAccess;
+import com.google.wave.extensions.emaily.data.WaveletView;
 
 /**
  * @author dlux
@@ -33,11 +36,18 @@ import com.google.wave.extensions.emaily.data.DataAccess;
  */
 @Singleton
 public class EmailSchedulerServlet extends HttpServlet {
+  // configuration properties (in seconds)
+  private static final String MAX_SERVING_TIME = "scheduler.max_servlet_serving_time";
+  private static final String[] requiredLongProperties = { MAX_SERVING_TIME };
+
   // injected dependencies
   private final Provider<DataAccess> dataAccessProvider;
+  private final EmailyConfig emailyConfig;
   
-  public EmailSchedulerServlet(Provider<DataAccess> dataAccessProvider) {
+  public EmailSchedulerServlet(Provider<DataAccess> dataAccessProvider, EmailyConfig emailyConfig) {
     this.dataAccessProvider = dataAccessProvider;
+    this.emailyConfig = emailyConfig;
+    emailyConfig.checkRequiredLongProperties(requiredLongProperties);
   }
   
   @Override
@@ -49,9 +59,17 @@ public class EmailSchedulerServlet extends HttpServlet {
 
   private void sendScheduledEmails() {
     try {
-      // TODO(dlux): add measurement of time
+      long endTime = Calendar.getInstance().getTimeInMillis()
+          + emailyConfig.getLong(MAX_SERVING_TIME) * 1000;
       List<?> ids = dataAccessProvider.get().getWaveletIdsToSend();
-      dataAccessProvider.get().commit();
+      for (Object idObj : ids) {
+        if (Calendar.getInstance().getTimeInMillis() >= endTime) {
+          break;
+        }
+        WaveletView waveletView = dataAccessProvider.get().getWaveletView((String) idObj);
+        
+        dataAccessProvider.get().commit();
+      }
     } finally {
       dataAccessProvider.get().rollback();
     }

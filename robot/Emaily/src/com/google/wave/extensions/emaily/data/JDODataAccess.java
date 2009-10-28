@@ -46,12 +46,17 @@ public class JDODataAccess implements DataAccess {
     this.pmf = pmf;
   }
 
-  public WaveletView getWaveletView(String waveletId, String email) {
+  @Override
+  public WaveletView getWaveletView(String id) {
     try {
-      return getPm().getObjectById(WaveletView.class, WaveletView.buildId(waveletId, email));
+      return getPm().getObjectById(WaveletView.class, id);
     } catch (JDOObjectNotFoundException e) {
       return null;
     }
+  }
+
+  public WaveletView getWaveletView(String waveletId, String email) {
+    return getWaveletView(WaveletView.buildId(waveletId, email));
   }
 
   @Override
