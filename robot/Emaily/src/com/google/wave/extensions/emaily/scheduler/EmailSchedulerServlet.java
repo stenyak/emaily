@@ -43,10 +43,12 @@ public class EmailSchedulerServlet extends HttpServlet {
   // injected dependencies
   private final Provider<DataAccess> dataAccessProvider;
   private final EmailyConfig emailyConfig;
+  private final ScheduledEmailSender sender;
   
-  public EmailSchedulerServlet(Provider<DataAccess> dataAccessProvider, EmailyConfig emailyConfig) {
+  public EmailSchedulerServlet(Provider<DataAccess> dataAccessProvider, EmailyConfig emailyConfig, ScheduledEmailSender sender) {
     this.dataAccessProvider = dataAccessProvider;
     this.emailyConfig = emailyConfig;
+    this.sender = sender;
     emailyConfig.checkRequiredLongProperties(requiredLongProperties);
   }
   
@@ -67,7 +69,8 @@ public class EmailSchedulerServlet extends HttpServlet {
           break;
         }
         WaveletView waveletView = dataAccessProvider.get().getWaveletView((String) idObj);
-        
+        sender.SendScheduledEmail(waveletView);
+        dataAccessProvider.get().saveWaveletView(waveletView);
         dataAccessProvider.get().commit();
       }
     } finally {

@@ -49,7 +49,7 @@ public class JDODataAccess implements DataAccess {
   @Override
   public WaveletView getWaveletView(String id) {
     try {
-      return getPm().getObjectById(WaveletView.class, id);
+      return getPm().detachCopy(getPm().getObjectById(WaveletView.class, id));
     } catch (JDOObjectNotFoundException e) {
       return null;
     }
@@ -60,7 +60,7 @@ public class JDODataAccess implements DataAccess {
   }
 
   @Override
-  public void persistWaveletView(WaveletView waveletView) {
+  public void saveWaveletView(WaveletView waveletView) {
     getPm().makePersistent(waveletView);
   }
 
@@ -109,7 +109,8 @@ public class JDODataAccess implements DataAccess {
 
   @Override
   public List<?> getWaveletIdsToSend() {
-    Query query = getPm().newQuery("select id from " + WaveletView.class.getName() + " where timeForSending < :now ");
+    Query query = getPm().newQuery(
+        "select id from " + WaveletView.class.getName() + " where timeForSending < :now ");
     return (List<?>) query.execute(Calendar.getInstance().getTimeInMillis());
   }
 }

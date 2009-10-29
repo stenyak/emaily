@@ -30,7 +30,7 @@ import javax.jdo.annotations.PrimaryKey;
  * @author dlux
  * 
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION)
+@PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
 public class BlipVersionView {
   // Id of the blip view: this is a generated id.
   @SuppressWarnings("unused")

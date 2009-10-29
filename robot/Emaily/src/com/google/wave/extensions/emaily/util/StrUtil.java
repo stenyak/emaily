@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.Collection;
 
 /**
  * String utilities.
@@ -32,40 +31,32 @@ public class StrUtil {
    * Formats a collection of objects using the specified separator.
    * 
    * @param objects The collection to format.
-   * @param separator The separator to insert between the element in the
-   *          collection.
+   * @param separator The separator to insert between the element in the collection.
    * @return The string representing the collection of objects.
    */
-  public static String join(Collection<?> objects, String separator) {
-    if (objects == null)
-      return "";
+  public static String join(Iterable<?> objects, String separator) {
     StringBuilder sb = new StringBuilder();
-    for (Object o : objects) {
-      if (sb.length() > 0)
-        sb.append(separator);
-      sb.append(o.toString());
-    }
+    join(sb, objects, separator);
     return sb.toString();
   }
 
   /**
-   * Formats an array of objects using the specified separator.
+   * Formats a collection of objects using the specified separator.
    * 
-   * @param objects The array to format.
-   * @param separator The separator to insert between the element in the
-   *          collection.
-   * @return The string representing the array of objects.
+   * @param sb The stringbuffer to append to
+   * @param objects The collection to format.
+   * @param separator The separator to insert between the element in the collection.
    */
-  public static <T> String join(T[] objects, String separator) {
-    if (objects == null)
-      return "";
-    StringBuilder sb = new StringBuilder();
+  public static void join(StringBuilder sb, Iterable<?> objects,
+      String separator) {
+    if (objects == null) {
+      return;
+    }
     for (Object o : objects) {
       if (sb.length() > 0)
         sb.append(separator);
       sb.append(o.toString());
     }
-    return sb.toString();
   }
 
   /**

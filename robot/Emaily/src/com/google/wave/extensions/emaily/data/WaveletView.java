@@ -33,7 +33,7 @@ import javax.jdo.annotations.PrimaryKey;
  * @author dlux
  * 
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION)
+@PersistenceCapable(identityType = IdentityType.APPLICATION, detachable="true")
 public class WaveletView {
   
   @NotPersistent
@@ -53,6 +53,12 @@ public class WaveletView {
   private String emailAddressToken;
   
   @Persistent
+  private String title;
+  
+  @Persistent
+  private String rootBlipId;
+  
+  @Persistent
   @Order(extensions = @Extension(vendorName="datanucleus", key="list-ordering", value="firstEditedTimestamp asc"))
   private List<BlipVersionView> unsentBlips;
   
@@ -65,22 +71,21 @@ public class WaveletView {
 
   @Persistent
   private Long timeForSending;  // nullable, null means: infinity
-  
+
   /**
-   * Constructor for an empty object with a key and default values.
+   * Constructor for an empty object with the required fields and default
+   * values.
    * 
    * @param waveletId
    * @param email
    */
-  public WaveletView(String waveletId, String email) {
+  public WaveletView(String waveletId, String email, String rootBlipId) {
     this();
-    id = buildId(waveletId, email);
-    version = 0;
-    emailAddressToken = generateNewEmailAddressToken();
-    unsentBlips = new ArrayList<BlipVersionView>();
-    sentBlips = new ArrayList<BlipVersionView>();
-    lastEmailSentTime = 0;
-    timeForSending = null;
+    this.id = buildId(waveletId, email);
+    this.emailAddressToken = generateNewEmailAddressToken();
+    this.unsentBlips = new ArrayList<BlipVersionView>();
+    this.sentBlips = new ArrayList<BlipVersionView>();
+    this.rootBlipId = rootBlipId;
   }
 
   private WaveletView() {
@@ -178,5 +183,21 @@ public class WaveletView {
     } else {
       this.timeForSending = timeForSending;
     }
+  }
+  
+  public String getTitle() {
+    return title;
+  }
+  
+  public void setTitle(String title) {
+    this.title = title;
+  }
+  
+  public String getRootBlipId() {
+    return rootBlipId;
+  }
+  
+  public void setRootBlipId(String rootBlipId) {
+    this.rootBlipId = rootBlipId;
   }
 }
