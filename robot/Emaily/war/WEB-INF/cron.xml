@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <cronentries>
   <cron>
-    <url>/cron/sendqueue</url>
+    <url>/cron/email_scheduler</url>
     <description>Send queued blips in every minute</description>
     <schedule>every 1 minutes</schedule>
   </cron>

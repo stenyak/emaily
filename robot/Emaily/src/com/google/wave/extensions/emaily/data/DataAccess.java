@@ -25,7 +25,7 @@ import java.util.List;
 public interface DataAccess {
 
   /**
-   * Returns an existing WaveletView from the database (detached).
+   * Returns an existing WaveletView from the database.
    * 
    * @param id The wavelet view id.
    * @return A wavelet view.
@@ -47,7 +47,7 @@ public interface DataAccess {
    * 
    * @param waveletView Wavelet to save.
    */
-  public void saveWaveletView(WaveletView waveletView);
+  public void persistWaveletView(WaveletView waveletView);
 
   /**
    * Rolls back the current transaction. Following operations will open a new transaction.

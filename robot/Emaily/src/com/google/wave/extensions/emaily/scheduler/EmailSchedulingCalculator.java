@@ -15,14 +15,11 @@
 package com.google.wave.extensions.emaily.scheduler;
 
 import java.util.Calendar;
-import java.util.List;
 
 import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.config.EmailyConfig;
 import com.google.wave.extensions.emaily.data.BlipVersionView;
-import com.google.wave.extensions.emaily.data.DataAccess;
 import com.google.wave.extensions.emaily.data.WaveletView;
 
 // The idea on the basic sending schedule is the following:
@@ -64,12 +61,10 @@ public class EmailSchedulingCalculator {
 
   // Injected dependencies
   private final EmailyConfig config;
-  private final Provider<DataAccess> dataAccessProvider;
 
   @Inject
-  public EmailSchedulingCalculator(EmailyConfig config, Provider<DataAccess> dataAccessProvider) {
+  public EmailSchedulingCalculator(EmailyConfig config) {
     this.config = config;
-    this.dataAccessProvider = dataAccessProvider;
     config.checkRequiredLongProperties(requiredLongProperties);
   }
 

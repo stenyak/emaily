@@ -70,7 +70,6 @@ public class EmailSchedulerServlet extends HttpServlet {
         }
         WaveletView waveletView = dataAccessProvider.get().getWaveletView((String) idObj);
         sender.SendScheduledEmail(waveletView);
-        dataAccessProvider.get().saveWaveletView(waveletView);
         dataAccessProvider.get().commit();
       }
     } finally {

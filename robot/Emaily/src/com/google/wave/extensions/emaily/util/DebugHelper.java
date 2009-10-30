@@ -127,11 +127,26 @@ public class DebugHelper {
     sb.append("Email address token: ").append(waveletView.getEmailAddressToken()).append('\n');
     printTimestamp(sb, "Last email sent time: ", waveletView.getLastEmailSentTime());
     printTimestamp(sb, "Time for sending:     ", waveletView.getTimeForSending());
+    sb.append("Sent blips: \n");
+    for (BlipVersionView b : waveletView.getUnsentBlips()) {
+      sb.append("- Blip Id: ").append(b.getBlipId()).append('\n');
+      sb.append("  Blip version: ").append(b.getVersion()).append('\n');
+      sb.append("  Participants:");
+      StrUtil.join(sb, b.getParticipants(), ", ");
+      sb.append('\n');
+      printTimestamp(sb, "  First edited:     ", b.getFirstEditedTimestamp());
+      printTimestamp(sb, "  Last changed:     ", b.getLastChangedTimestamp());
+      printTimestamp(sb, "  Last submitted:   ", b.getLastSubmittedTimestamp());
+      printTimestamp(sb, "  Becomes sendable: ", b.getTimeToBecomeSendable());
+      // sb.append("  Content:").append(b.getContent()).append('\n');
+    }
     sb.append("Unsent blips: \n");
     for (BlipVersionView b : waveletView.getUnsentBlips()) {
       sb.append("- Blip Id: ").append(b.getBlipId()).append('\n');
       sb.append("  Blip version: ").append(b.getVersion()).append('\n');
-      // sb.append("  Participants:").append(b.getParticipants(), ", ").append('\n');
+      sb.append("  Participants:");
+      StrUtil.join(sb, b.getParticipants(), ", ");
+      sb.append('\n');
       printTimestamp(sb, "  First edited:     ", b.getFirstEditedTimestamp());
       printTimestamp(sb, "  Last changed:     ", b.getLastChangedTimestamp());
       printTimestamp(sb, "  Last submitted:   ", b.getLastSubmittedTimestamp());

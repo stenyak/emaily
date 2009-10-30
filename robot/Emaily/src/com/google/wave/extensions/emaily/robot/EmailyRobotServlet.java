@@ -40,7 +40,6 @@ import com.google.inject.Singleton;
 import com.google.wave.api.AbstractRobotServlet;
 import com.google.wave.api.Blip;
 import com.google.wave.api.Event;
-import com.google.wave.api.EventType;
 import com.google.wave.api.RobotMessageBundle;
 import com.google.wave.api.StyleType;
 import com.google.wave.api.StyledText;
@@ -51,7 +50,6 @@ import com.google.wave.extensions.emaily.data.BlipVersionView;
 import com.google.wave.extensions.emaily.data.DataAccess;
 import com.google.wave.extensions.emaily.data.PersistentEmail;
 import com.google.wave.extensions.emaily.data.WaveletView;
-import com.google.wave.extensions.emaily.email.EmailSender;
 import com.google.wave.extensions.emaily.email.MailUtil;
 import com.google.wave.extensions.emaily.scheduler.EmailSchedulingCalculator;
 import com.google.wave.extensions.emaily.util.DebugHelper;
@@ -67,7 +65,6 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private static final long serialVersionUID = 8878209094937861353L;
 
   // Injected dependencies
-  private final EmailSender emailSender;
   private final HostingProvider hostingProvider;
   private final Provider<HttpServletRequest> reqProvider;
   private final PersistenceManagerFactory pmFactory;
@@ -80,14 +77,10 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private MimeEntityConfig mimeEntityConfig = new MimeEntityConfig();
 
   @Inject
-  public EmailyRobotServlet(EmailSender emailSender,
-      HostingProvider hostingProvider,
-      Provider<HttpServletRequest> reqProvider,
-      PersistenceManagerFactory pmFactory, Logger logger,
-      EmailSchedulingCalculator emailSchedulingCalculator,
-      DebugHelper debugHelper, Provider<DataAccess> dataAccessProvider,
-      MailUtil mailUtil) {
-    this.emailSender = emailSender;
+  public EmailyRobotServlet(HostingProvider hostingProvider,
+      Provider<HttpServletRequest> reqProvider, PersistenceManagerFactory pmFactory, Logger logger,
+      EmailSchedulingCalculator emailSchedulingCalculator, DebugHelper debugHelper,
+      Provider<DataAccess> dataAccessProvider, MailUtil mailUtil) {
     this.hostingProvider = hostingProvider;
     this.reqProvider = reqProvider;
     this.pmFactory = pmFactory;
@@ -103,18 +96,10 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    */
   @Override
   public void processEvents(RobotMessageBundle bundle) {
-    // Old behavior.
-    // TODO(dlux): To be removed when the new is working.
-    for (Event event : bundle.getEvents()) {
-      if (event.getType() == EventType.BLIP_SUBMITTED) {
-        sendEmailNow(bundle, event);
-      }
-    }
     // New behavior:
     String proxyingFor = getProxyingFor();
     if (!proxyingFor.isEmpty()) {
-      String email = hostingProvider
-          .getEmailAddressFromRobotProxyFor(proxyingFor);
+      String email = hostingProvider.getEmailAddressFromRobotProxyFor(proxyingFor);
       processWaveletViewModifications(bundle, email);
     }
     processIncomingEmails(bundle.getWavelet());
@@ -126,17 +111,15 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * @param bundle The robot message bundle.
    * @param email The email of the user.
    */
-  private void processWaveletViewModifications(RobotMessageBundle bundle,
-      String email) {
+  private void processWaveletViewModifications(RobotMessageBundle bundle, String email) {
     try {
       String waveletId = bundle.getWavelet().getWaveletId();
 
       // Get or create the WaveletView for the wavelet and the current user.
-      WaveletView waveletView = dataAccessProvider.get().getWaveletView(
-          waveletId, email);
+      WaveletView waveletView = dataAccessProvider.get().getWaveletView(waveletId, email);
       if (waveletView == null) {
-        waveletView = new WaveletView(waveletId, email, bundle.getWavelet()
-            .getRootBlipId());
+        waveletView = new WaveletView(waveletId, email, bundle.getWavelet().getRootBlipId());
+        dataAccessProvider.get().persistWaveletView(waveletView);
       }
 
       updateWaveletView(waveletView, bundle);
@@ -151,7 +134,6 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
 
       // Prints the debug info
       logger.info(debugHelper.printWaveletViewInfo(waveletView));
-      dataAccessProvider.get().saveWaveletView(waveletView);
       dataAccessProvider.get().commit();
     } finally {
       dataAccessProvider.get().rollback();
@@ -165,8 +147,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * @param waveletView The wavelet view to update.
    * @param bundle The message bundle received by the robot.
    */
-  private void updateWaveletView(WaveletView waveletView,
-      RobotMessageBundle bundle) {
+  private void updateWaveletView(WaveletView waveletView, RobotMessageBundle bundle) {
     waveletView.setTitle(bundle.getWavelet().getTitle());
   }
 
@@ -218,8 +199,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       still_editing = true;
       break;
     }
-    emailSchedulingCalculator.updateBlipViewTimestamps(blipVersionView,
-        still_editing);
+    emailSchedulingCalculator.updateBlipViewTimestamps(blipVersionView, still_editing);
   }
 
   /**
@@ -239,37 +219,6 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   }
 
   /**
-   * Send an email immediately after a blip is submitted. Note, that this behavior is going to be
-   * deprecated soon.
-   * 
-   * @param bundle RobotMessageBundle received from the Wave Server.
-   * @param event The BLIP_SUBMITTED event.
-   */
-  private void sendEmailNow(RobotMessageBundle bundle, Event event) {
-    // Do not try to send an email if we are not proxying for anyone.
-    String proxyingFor = getProxyingFor();
-    if (proxyingFor.isEmpty()) {
-      return;
-    }
-    String recipient = hostingProvider
-        .getEmailAddressFromRobotProxyFor(proxyingFor);
-
-    final Wavelet wavelet = bundle.getWavelet();
-    final Blip blip = event.getBlip();
-    final String emailSubject = wavelet.getTitle();
-    String emailBody = blip.getDocument().getText();
-    if (blip.getBlipId().equals(wavelet.getRootBlipId())) {
-      // Remove the Wave Title from the root blip content.
-      emailBody = emailBody.substring(emailSubject.length()).trim();
-    }
-    final String senderEmail = hostingProvider
-        .getEmailAddressForWaveParticipantIdInEmailyDomain(blip.getCreator());
-
-    emailSender.simpleSendTextEmail(senderEmail, recipient, emailSubject,
-        emailBody);
-  }
-
-  /**
    * Processes the incoming emails accumulated so far: creates one new wave per email.
    * 
    * TODO(taton) When an email has many wave recipients, this currently duplicates the Wave.
@@ -283,8 +232,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     Transaction tx = pm.currentTransaction();
 
     try {
-      Extent<PersistentEmail> extent = pm.getExtent(PersistentEmail.class,
-          false);
+      Extent<PersistentEmail> extent = pm.getExtent(PersistentEmail.class, false);
       Query query = pm.newQuery(extent);
       List<PersistentEmail> emails = (List<PersistentEmail>) query.execute();
       for (PersistentEmail email : emails) {

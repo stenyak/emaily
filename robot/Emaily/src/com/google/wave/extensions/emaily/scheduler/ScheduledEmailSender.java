@@ -20,12 +20,14 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.ListIterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.google.wave.extensions.emaily.config.HostingProvider;
 import com.google.wave.extensions.emaily.data.BlipVersionView;
-import com.google.wave.extensions.emaily.data.DataAccess;
 import com.google.wave.extensions.emaily.data.WaveletView;
 import com.google.wave.extensions.emaily.email.EmailSender;
+import com.google.wave.extensions.emaily.util.DebugHelper;
 import com.google.wave.extensions.emaily.util.StrUtil;
 
 /**
@@ -37,19 +39,24 @@ public class ScheduledEmailSender {
   private final HostingProvider hostingProvider;
   private final EmailSender emailSender;
   private final EmailSchedulingCalculator calculator;
+  private final DebugHelper debugHelper;
+  private final Logger logger;
 
-  public ScheduledEmailSender(HostingProvider hostingProvider, EmailSender emailSender, EmailSchedulingCalculator calculator) {
+  public ScheduledEmailSender(HostingProvider hostingProvider, EmailSender emailSender,
+      EmailSchedulingCalculator calculator, DebugHelper debugHelper, Logger logger) {
     this.hostingProvider = hostingProvider;
     this.emailSender = emailSender;
     this.calculator = calculator;
+    this.debugHelper = debugHelper;
+    this.logger = logger;
   }
 
   public void SendScheduledEmail(WaveletView waveletView) {
     long now = Calendar.getInstance().getTimeInMillis();
-    
+
     // Calculate the next send time
     calculator.calculateWaveletViewNextSendTime(waveletView);
-    
+
     // Make sure that we have to send the email.
     if (waveletView.getTimeForSending() >= now) {
       return;
@@ -106,12 +113,21 @@ public class ScheduledEmailSender {
       waveletView.getSentBlips().add(b);
       waveletView.getUnsentBlips().remove(b);
     }
-    
+
     // - Recalculate the next send time
     calculator.calculateWaveletViewNextSendTime(waveletView);
-    
+
     // Send the email
     emailSender.simpleSendTextEmail(from, waveletView.getEmail(), subject, body.toString());
 
+    // Debug info
+    if (logger.isLoggable(Level.INFO)) {
+      StringBuilder sb = new StringBuilder();
+      sb.append("Email sent. Text: ");
+      sb.append(body);
+      sb.append("\nWavelet View:");
+      debugHelper.printWaveletViewInfo(sb, waveletView);
+      logger.info(sb.toString());
+    }
   }
 }

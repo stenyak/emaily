@@ -17,6 +17,7 @@ package com.google.wave.extensions.emaily.web;
 import com.google.wave.extensions.emaily.config.AppspotHostingProvider;
 import com.google.wave.extensions.emaily.config.HostingProvider;
 import com.google.wave.extensions.emaily.email.IncomingEmailServlet;
+import com.google.wave.extensions.emaily.scheduler.EmailSchedulerServlet;
 
 /**
  * Guice module which installs appspot-specific handlers and adds
@@ -30,6 +31,7 @@ public class AppspotEmailyServletModule extends EmailyServletModule {
   protected void configureServlets() {
     super.configureServlets();
     serve("/_ah/mail/*").with(IncomingEmailServlet.class);
+    serve("/cron/email_scheduler").with(EmailSchedulerServlet.class);
     bind(HostingProvider.class).to(AppspotHostingProvider.class);
   }
 }

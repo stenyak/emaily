@@ -49,7 +49,7 @@ public class JDODataAccess implements DataAccess {
   @Override
   public WaveletView getWaveletView(String id) {
     try {
-      return getPm().detachCopy(getPm().getObjectById(WaveletView.class, id));
+      return getPm().getObjectById(WaveletView.class, id);
     } catch (JDOObjectNotFoundException e) {
       return null;
     }
@@ -60,7 +60,7 @@ public class JDODataAccess implements DataAccess {
   }
 
   @Override
-  public void saveWaveletView(WaveletView waveletView) {
+  public void persistWaveletView(WaveletView waveletView) {
     getPm().makePersistent(waveletView);
   }
 
