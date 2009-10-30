@@ -171,21 +171,26 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
         break;
       }
     }
+
+    // Extract the content
+    String blipContent = blip.getDocument().getText();
+    if (blip.getBlipId().equals(waveletView.getRootBlipId())) {
+      // Remove the Wave Title from the root blip content.
+      blipContent = blipContent.substring(blipContent.length()).trim();
+    }
+
     // If it did not exist yet, create one:
     if (blipVersionView == null) {
+      if (blipContent.isEmpty()) {
+        // We don't create a new blip if it would be empty.
+        return;
+      }
       blipVersionView = new BlipVersionView(waveletView, blip.getBlipId());
       waveletView.getUnsentBlips().add(blipVersionView);
     }
     // Update the blip version to the latest
     blipVersionView.setVersion(blip.getVersion());
 
-    // Store the text
-    String blipContent = blip.getDocument().getText();
-    if (blip.getBlipId().equals(waveletView.getRootBlipId())) {
-      // Remove the Wave Title from the root blip content.
-      blipContent = blipContent.substring(blipContent.length()).trim();
-    }
-    blipVersionView.setContent(blipContent);
     blipVersionView.setParticipants(blip.getContributors());
 
     boolean still_editing = false;
@@ -199,6 +204,13 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       still_editing = true;
       break;
     }
+
+    if (still_editing && blipContent.equals(blipVersionView.getContent())) {
+      // We don't change any timestamp if the content is not changed.
+      return;
+    }
+    blipVersionView.setContent(blipContent);
+
     emailSchedulingCalculator.updateBlipViewTimestamps(blipVersionView, still_editing);
   }
 
@@ -306,9 +318,9 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       // end-of-lines.
       // This still does not work properly.
       StringBuilder sb = new StringBuilder();
-      sb.append("\n");
+      sb.append('\n');
       mailUtil.mimeEntityToText(sb, message);
-      sb.append("\n");
+      sb.append('\n');
       textView.append(sb.toString());
     }
   }

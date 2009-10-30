@@ -94,10 +94,20 @@ public class ScheduledEmailSender {
 
     // Build the body
     StringBuilder body = new StringBuilder();
+    boolean first_blip = true;
     for (BlipVersionView b : blips) {
-      body.append("-- From: ");
-      StrUtil.join(body, b.getParticipants(), ", ");
-      body.append('\n').append(b.getContent()).append('\n');
+      if (b.getParticipants().size() == 1 && contributors.size() == 1
+          && b.getParticipants().iterator().next().equals(contributors.iterator().next())) {
+        if (!first_blip) {
+          body.append("==\n");
+        }
+      } else {
+        body.append("== From: ");
+        StrUtil.join(body, b.getParticipants(), ", ");
+        body.append('\n');
+      }
+      first_blip = false;
+      body.append(b.getContent()).append('\n');
     }
 
     // Do the administration:
