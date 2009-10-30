@@ -52,9 +52,12 @@ public class StrUtil {
     if (objects == null) {
       return;
     }
+    boolean first = true;
     for (Object o : objects) {
-      if (sb.length() > 0)
+      if (!first) {
         sb.append(separator);
+        first = false;
+      }
       sb.append(o.toString());
     }
   }

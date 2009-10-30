@@ -31,7 +31,7 @@ public class AppspotEmailyServletModule extends EmailyServletModule {
   protected void configureServlets() {
     super.configureServlets();
     serve("/_ah/mail/*").with(IncomingEmailServlet.class);
-    serve("/cron/email_scheduler").with(EmailSchedulerServlet.class);
+    serve("/cron/email_scheduler*").with(EmailSchedulerServlet.class);
     bind(HostingProvider.class).to(AppspotHostingProvider.class);
   }
 }

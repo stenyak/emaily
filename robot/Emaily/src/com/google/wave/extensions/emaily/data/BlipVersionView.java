@@ -30,16 +30,20 @@ import javax.jdo.annotations.PrimaryKey;
  * @author dlux
  * 
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+@PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class BlipVersionView {
-  // Id of the blip view: this is a generated id.
+  // Id of the blip view: a generated id.
   @SuppressWarnings("unused")
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")
   @PrimaryKey
   private String id;
+  
+  @Persistent(mappedBy="unsentBlips")
+  private WaveletView waveletView;
 
   // Other fields
+  @Persistent
   private String blipId;
 
   @Persistent
@@ -64,13 +68,22 @@ public class BlipVersionView {
   @NotPersistent
   private long timeToBecomeSendable;
 
-  // Accessors
-  public String getBlipId() {
-    return blipId;
+  public BlipVersionView(WaveletView waveletView, String blipId) {
+    this.waveletView = waveletView;
+    this.blipId = blipId;
   }
 
-  public void setBlipId(String blipId) {
-    this.blipId = blipId;
+  @SuppressWarnings("unused")
+  private BlipVersionView() {
+  }
+  
+  // Accessors
+  public WaveletView getWaveletView() {
+    return waveletView;
+  }
+
+  public String getBlipId() {
+    return blipId;
   }
 
   public long getVersion() {
@@ -127,5 +140,5 @@ public class BlipVersionView {
 
   public void setTimeToBecomeSendable(long timeToBecomeSendable) {
     this.timeToBecomeSendable = timeToBecomeSendable;
-  }
+  }  
 }

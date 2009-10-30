@@ -18,12 +18,14 @@ package com.google.wave.extensions.emaily.scheduler;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.config.EmailyConfig;
@@ -44,21 +46,30 @@ public class EmailSchedulerServlet extends HttpServlet {
   private final Provider<DataAccess> dataAccessProvider;
   private final EmailyConfig emailyConfig;
   private final ScheduledEmailSender sender;
+  private final Logger logger;
   
-  public EmailSchedulerServlet(Provider<DataAccess> dataAccessProvider, EmailyConfig emailyConfig, ScheduledEmailSender sender) {
+  @Inject
+  public EmailSchedulerServlet(Provider<DataAccess> dataAccessProvider, EmailyConfig emailyConfig, ScheduledEmailSender sender, Logger logger) {
     this.dataAccessProvider = dataAccessProvider;
     this.emailyConfig = emailyConfig;
     this.sender = sender;
+    this.logger = logger;
     emailyConfig.checkRequiredLongProperties(requiredLongProperties);
   }
   
   @Override
-  protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException,
+  public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException,
       IOException {
+    logger.info("New cron request");
     sendScheduledEmails();
-    super.doGet(req, resp);
   }
-
+  
+  @Override
+  public void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException,
+      IOException {
+    doGet(req, resp);
+  }
+  
   private void sendScheduledEmails() {
     try {
       long endTime = Calendar.getInstance().getTimeInMillis()

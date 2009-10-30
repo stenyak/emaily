@@ -23,6 +23,8 @@ import java.util.ListIterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.config.HostingProvider;
 import com.google.wave.extensions.emaily.data.BlipVersionView;
 import com.google.wave.extensions.emaily.data.WaveletView;
@@ -34,6 +36,7 @@ import com.google.wave.extensions.emaily.util.StrUtil;
  * @author dlux
  * 
  */
+@Singleton
 public class ScheduledEmailSender {
   // Injected dependencies
   private final HostingProvider hostingProvider;
@@ -42,6 +45,7 @@ public class ScheduledEmailSender {
   private final DebugHelper debugHelper;
   private final Logger logger;
 
+  @Inject
   public ScheduledEmailSender(HostingProvider hostingProvider, EmailSender emailSender,
       EmailSchedulingCalculator calculator, DebugHelper debugHelper, Logger logger) {
     this.hostingProvider = hostingProvider;

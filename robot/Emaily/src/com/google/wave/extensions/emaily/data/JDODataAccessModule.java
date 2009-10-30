@@ -14,6 +14,8 @@
  */
 package com.google.wave.extensions.emaily.data;
 
+import java.util.logging.Logger;
+
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManagerFactory;
 
@@ -28,6 +30,8 @@ import com.google.inject.Singleton;
  * 
  */
 public class JDODataAccessModule extends AbstractModule {
+  private static final Logger logger = Logger.getLogger(JDODataAccess.class.getName());
+  
   @Override
   protected void configure() {
     bind(DataAccess.class).to(JDODataAccess.class);
@@ -37,6 +41,10 @@ public class JDODataAccessModule extends AbstractModule {
   @Singleton
   @Provides
   public PersistenceManagerFactory getPersistenceManagerFactory() {
+    // Sometimes PersistenceManagerFactory is instantiated more than once. This property avoids
+    // throwing this case.
+    logger.info("Initializing PersistenceManagerFactory");
+    System.setProperty("appengine.orm.disable.duplicate.pmf.exception", "1");
     return JDOHelper.getPersistenceManagerFactory("transactions-optional");
   }
 

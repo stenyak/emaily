@@ -173,8 +173,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     }
     // If it did not exist yet, create one:
     if (blipVersionView == null) {
-      blipVersionView = new BlipVersionView();
-      blipVersionView.setBlipId(blip.getBlipId());
+      blipVersionView = new BlipVersionView(waveletView, blip.getBlipId());
       waveletView.getUnsentBlips().add(blipVersionView);
     }
     // Update the blip version to the latest
@@ -187,6 +186,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       blipContent = blipContent.substring(blipContent.length()).trim();
     }
     blipVersionView.setContent(blipContent);
+    blipVersionView.setParticipants(blip.getContributors());
 
     boolean still_editing = false;
     switch (e.getType()) {

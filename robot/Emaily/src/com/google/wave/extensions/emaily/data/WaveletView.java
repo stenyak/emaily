@@ -27,54 +27,54 @@ import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
 /**
- * Data object for a wavelet view. A wavelet view is a wavelet from an email
- * user's perspective.
+ * Data object for a wavelet view. A wavelet view is a wavelet from an email user's perspective.
  * 
  * @author dlux
  * 
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION, detachable="true")
+@PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class WaveletView {
-  
+
   @NotPersistent
   private static final Random randomGenerator = new Random();
-  
+
   // The ID of this entity consists of two things: the wavelet Id and the email
   // address of the user, separated by a ' '.
   @PrimaryKey
   @Persistent
-  private String id; 
-  
+  private String id;
+
   // Fields
   @Persistent
   private long version;
-  
+
   @Persistent
   private String emailAddressToken;
-  
+
   @Persistent
   private String title;
-  
+
   @Persistent
   private String rootBlipId;
-  
-  @Persistent
-  @Order(extensions = @Extension(vendorName="datanucleus", key="list-ordering", value="firstEditedTimestamp asc"))
+
+  @Persistent(mappedBy = "waveletView")
+  @Order(extensions = @Extension(vendorName = "datanucleus", key = "list-ordering", value = "firstEditedTimestamp asc"))
   private List<BlipVersionView> unsentBlips;
-  
-  @Persistent
-  @Order(extensions = @Extension(vendorName="datanucleus", key="list-ordering", value="firstEditedTimestamp asc"))
-  private List<BlipVersionView> sentBlips;
-  
+
+  // TODO(dlux): once the storage is sorted out, store the sent blips also.
+  // @Persistent
+  // @Order(extensions = @Extension(vendorName="datanucleus", key="list-ordering",
+  // value="firstEditedTimestamp asc"))
+  // private List<BlipVersionView> sentBlips = new ArrayList<BlipVersionView>();
+
   @Persistent
   private long lastEmailSentTime;
 
   @Persistent
-  private Long timeForSending;  // nullable, null means: infinity
+  private Long timeForSending; // nullable, null means: infinity
 
   /**
-   * Constructor for an empty object with the required fields and default
-   * values.
+   * Constructor for an empty object with the required fields and default values.
    * 
    * @param waveletId
    * @param email
@@ -84,7 +84,7 @@ public class WaveletView {
     this.id = buildId(waveletId, email);
     this.emailAddressToken = generateNewEmailAddressToken();
     this.unsentBlips = new ArrayList<BlipVersionView>();
-    this.sentBlips = new ArrayList<BlipVersionView>();
+    // this.sentBlips = new ArrayList<BlipVersionView>();
     this.rootBlipId = rootBlipId;
   }
 
@@ -95,27 +95,27 @@ public class WaveletView {
   public String getWaveletId() {
     return splitId(id)[0];
   }
-  
+
   public String getEmail() {
     return splitId(id)[1];
   }
-  
+
   public void setWaveletId(String waveletId) {
     setId(waveletId, getEmail());
   }
-  
+
   public void setEmail(String email) {
     setId(getWaveletId(), email);
   }
-  
+
   public String getId() {
     return id;
   }
-  
+
   private void setId(String waveletId, String email) {
     id = buildId(waveletId, email);
   }
-  
+
   // utility functions for the Id field.
   public static String buildId(String waveletId, String email) {
     return waveletId + ' ' + email;
@@ -126,9 +126,14 @@ public class WaveletView {
   }
 
   private static String generateNewEmailAddressToken() {
-    return Long.toString(randomGenerator.nextLong());
+    long randomNumber = randomGenerator.nextLong();
+    if (randomNumber > 0) {
+      return Long.toString(randomNumber);
+    } else {
+      return Long.toString(-randomNumber) + "x";
+    }
   }
-  
+
   // Accessors for the rest of the fields
   public long getVersion() {
     return version;
@@ -155,11 +160,12 @@ public class WaveletView {
   }
 
   public List<BlipVersionView> getSentBlips() {
-    return sentBlips;
+    // return sentBlips;
+    return new ArrayList<BlipVersionView>();
   }
 
   public void setSentBlips(List<BlipVersionView> sentBlips) {
-    this.sentBlips = sentBlips;
+    // this.sentBlips = sentBlips;
   }
 
   public long getLastEmailSentTime() {
@@ -176,7 +182,7 @@ public class WaveletView {
     }
     return timeForSending;
   }
-  
+
   public void setTimeForSending(long timeForSending) {
     if (timeForSending == Long.MAX_VALUE) {
       this.timeForSending = null;
@@ -184,19 +190,19 @@ public class WaveletView {
       this.timeForSending = timeForSending;
     }
   }
-  
+
   public String getTitle() {
     return title;
   }
-  
+
   public void setTitle(String title) {
     this.title = title;
   }
-  
+
   public String getRootBlipId() {
     return rootBlipId;
   }
-  
+
   public void setRootBlipId(String rootBlipId) {
     this.rootBlipId = rootBlipId;
   }

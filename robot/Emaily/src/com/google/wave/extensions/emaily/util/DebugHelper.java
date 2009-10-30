@@ -128,7 +128,7 @@ public class DebugHelper {
     printTimestamp(sb, "Last email sent time: ", waveletView.getLastEmailSentTime());
     printTimestamp(sb, "Time for sending:     ", waveletView.getTimeForSending());
     sb.append("Sent blips: \n");
-    for (BlipVersionView b : waveletView.getUnsentBlips()) {
+    for (BlipVersionView b : waveletView.getSentBlips()) {
       sb.append("- Blip Id: ").append(b.getBlipId()).append('\n');
       sb.append("  Blip version: ").append(b.getVersion()).append('\n');
       sb.append("  Participants:");
