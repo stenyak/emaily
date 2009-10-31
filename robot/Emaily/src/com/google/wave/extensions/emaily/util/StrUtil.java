@@ -43,12 +43,11 @@ public class StrUtil {
   /**
    * Formats a collection of objects using the specified separator.
    * 
-   * @param sb The stringbuffer to append to
+   * @param sb The StringBuilder to append to
    * @param objects The collection to format.
    * @param separator The separator to insert between the element in the collection.
    */
-  public static void join(StringBuilder sb, Iterable<?> objects,
-      String separator) {
+  public static void join(StringBuilder sb, Iterable<?> objects, String separator) {
     if (objects == null) {
       return;
     }

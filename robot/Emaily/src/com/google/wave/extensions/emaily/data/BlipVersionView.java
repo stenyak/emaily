@@ -35,11 +35,11 @@ public class BlipVersionView {
   // Id of the blip view: a generated id.
   @SuppressWarnings("unused")
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")
+  @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
   @PrimaryKey
   private String id;
-  
-  @Persistent(mappedBy="unsentBlips")
+
+  @Persistent(mappedBy = "unsentBlips")
   private WaveletView waveletView;
 
   // Other fields
@@ -48,22 +48,22 @@ public class BlipVersionView {
 
   @Persistent
   private long version;
-  
+
   @Persistent
   private List<String> participants;
-  
+
   @Persistent
   private String content;
-  
+
   @Persistent
   private long firstEditedTimestamp;
-  
+
   @Persistent
   private long lastSubmittedTimestamp;
-  
+
   @Persistent
   private long lastChangedTimestamp;
-  
+
   // This field is calculated when necessary. See EmailScheduler.java
   @NotPersistent
   private long timeToBecomeSendable;
@@ -76,7 +76,7 @@ public class BlipVersionView {
   @SuppressWarnings("unused")
   private BlipVersionView() {
   }
-  
+
   // Accessors
   public WaveletView getWaveletView() {
     return waveletView;
@@ -140,5 +140,5 @@ public class BlipVersionView {
 
   public void setTimeToBecomeSendable(long timeToBecomeSendable) {
     this.timeToBecomeSendable = timeToBecomeSendable;
-  }  
+  }
 }

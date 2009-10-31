@@ -47,29 +47,30 @@ public class EmailSchedulerServlet extends HttpServlet {
   private final EmailyConfig emailyConfig;
   private final ScheduledEmailSender sender;
   private final Logger logger;
-  
+
   @Inject
-  public EmailSchedulerServlet(Provider<DataAccess> dataAccessProvider, EmailyConfig emailyConfig, ScheduledEmailSender sender, Logger logger) {
+  public EmailSchedulerServlet(Provider<DataAccess> dataAccessProvider, EmailyConfig emailyConfig,
+      ScheduledEmailSender sender, Logger logger) {
     this.dataAccessProvider = dataAccessProvider;
     this.emailyConfig = emailyConfig;
     this.sender = sender;
     this.logger = logger;
     emailyConfig.checkRequiredLongProperties(requiredLongProperties);
   }
-  
+
   @Override
   public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException,
       IOException {
     logger.info("New cron request");
     sendScheduledEmails();
   }
-  
+
   @Override
   public void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException,
       IOException {
     doGet(req, resp);
   }
-  
+
   /**
    * Send emails which are scheduled for sending.
    */

@@ -107,10 +107,11 @@ public class JDODataAccess implements DataAccess {
     pm = null;
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public List<?> getWaveletIdsToSend() {
+  public List<String> getWaveletIdsToSend() {
     Query query = getPm().newQuery(
         "select id from " + WaveletView.class.getName() + " where timeForSending < :now ");
-    return (List<?>) query.execute(Calendar.getInstance().getTimeInMillis());
+    return (List<String>) query.execute(Calendar.getInstance().getTimeInMillis());
   }
 }

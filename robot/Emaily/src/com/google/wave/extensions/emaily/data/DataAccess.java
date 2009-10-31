@@ -45,7 +45,7 @@ public interface DataAccess {
    * Persists a given waveletView. Call this only for non-persisted objects. After persisting, the
    * object can be modified until the end of the transation.
    * 
-   * @param waveletView Wavelet to persist. 
+   * @param waveletView Wavelet to persist.
    */
   public void persistWaveletView(WaveletView waveletView);
 
@@ -62,6 +62,6 @@ public interface DataAccess {
   /**
    * @return The list of wavelet Ids that are scheduled to be sent.
    */
-  public List<?> getWaveletIdsToSend();
+  public List<String> getWaveletIdsToSend();
 
 }
