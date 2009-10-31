@@ -70,8 +70,12 @@ public class EmailSchedulerServlet extends HttpServlet {
     doGet(req, resp);
   }
   
+  /**
+   * Send emails which are scheduled for sending.
+   */
   private void sendScheduledEmails() {
     try {
+      // Time-limiting the sending.
       long endTime = Calendar.getInstance().getTimeInMillis()
           + emailyConfig.getLong(MAX_SERVING_TIME) * 1000;
       List<?> ids = dataAccessProvider.get().getWaveletIdsToSend();

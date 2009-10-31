@@ -55,6 +55,10 @@ public class ScheduledEmailSender {
     this.logger = logger;
   }
 
+  /**
+   * Send an email form a WaveletView.
+   * @param waveletView A waveletView to generate the email from.
+   */
   public void SendScheduledEmail(WaveletView waveletView) {
     long now = Calendar.getInstance().getTimeInMillis();
 

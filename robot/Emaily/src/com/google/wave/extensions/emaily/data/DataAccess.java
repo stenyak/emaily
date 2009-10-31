@@ -42,10 +42,10 @@ public interface DataAccess {
   public WaveletView getWaveletView(String waveletId, String email);
 
   /**
-   * Save a given waveletView and its siblings to the database. Call this only before the end of the
-   * transaction, don't use the waveletView object afterwards.
+   * Persists a given waveletView. Call this only for non-persisted objects. After persisting, the
+   * object can be modified until the end of the transation.
    * 
-   * @param waveletView Wavelet to save.
+   * @param waveletView Wavelet to persist. 
    */
   public void persistWaveletView(WaveletView waveletView);
 

@@ -251,9 +251,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
         try {
           tx.begin();
           createWaveFromMessage(wavelet, email);
-          // TODO(taton) We should not delete the email here, but instead
-          // associate it with the
-          // Wave created for it somehow.
+          // TODO(taton) We should not delete the email here, but instead associate it with the Wave
+          // created for it somehow.
           pm.deletePersistent(email);
           tx.commit();
         } catch (Exception exn) {
@@ -286,8 +285,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     TextView textView = blip.getDocument();
     // textView.setAuthor(APPSPOT_ID + "@appspot.com");
     if (message.getFrom() != null) {
-      // Note: appendStyledText has a bug: the style does not apply to the last
-      // character.
+      // Note: appendStyledText has a bug: the style does not apply to the last character.
       textView.appendStyledText(new StyledText("From: ", StyleType.BOLD));
       StringBuilder sb = new StringBuilder();
       for (Mailbox from : message.getFrom()) {
@@ -314,9 +312,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       textView.appendMarkup("<br/>\n");
     }
     if (message.getBody() != null) {
-      // TODO(taton) The Wave robot Java API is buggy when processing
-      // end-of-lines.
-      // This still does not work properly.
+      // TODO(taton) The Wave robot Java API is buggy when processing end-of-lines. This still does
+      // not work properly.
       StringBuilder sb = new StringBuilder();
       sb.append('\n');
       mailUtil.mimeEntityToText(sb, message);
