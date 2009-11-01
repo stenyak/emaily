@@ -159,26 +159,27 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * @param e The wave event.
    */
   private void processBlipEvent(WaveletView waveletView, Event e) {
-    // We are dealing only with blip events.
-    logger.finer("processing blip event");
+    logger.finer("Started processing blip events");
     Blip blip = e.getBlip();
-    if (blip == null)
+    if (blip == null) {
+      logger.fine("Not blip event, returning");
       return;
+    }
 
     // Extract the content
-    logger.finer("extracting content");
+    logger.finer("Extracting content");
     String blipContent = blip.getDocument().getText();
     if (blip.getBlipId().equals(waveletView.getRootBlipId())) {
       // Remove the Wave Title from the root blip content.
       blipContent = blipContent.substring(waveletView.getTitle().length()).trim();
     }
 
-    // We do not want to resend the email to anyone who originally sent the email.
-    logger.finer("checking if the blip is created from an email form this person");
     String waveProxyIdOfUser = hostingProvider.getRobotProxyForFromEmailAddress(waveletView
         .getEmail());
-    if (waveProxyIdOfUser.equals(blip.getCreator()))
+    if (waveProxyIdOfUser.equals(blip.getCreator())) {
+      logger.fine("The blip is sent by the user itself, won't create a new blip from it");
       return;
+    }
 
     // find the corresponding blip in the unsent ones
     logger.finer("find the blip if it was already in the unsent list");
@@ -193,12 +194,15 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     // If it did not exist yet, create one:
     logger.finer("create one if not exist yet");
     if (blipVersionView == null) {
-      // If the blip content is empty, we don't create a new one.
-      if (blipContent.isEmpty())
+      if (blipContent.isEmpty()) {
+        logger.fine("The blip content is empty, we don't create a new blip");
         return;
-      // If the blip was not edited, just submitted, then it means that it is not changed.
-      if (e.getType() == EventType.BLIP_SUBMITTED)
+      }
+      if (e.getType() == EventType.BLIP_SUBMITTED) {
+        logger.fine("Blip submitted without edit: don't create a new version of it");
         return;
+      }
+      // Otherwise, create a new BlipVersionWiew
       blipVersionView = new BlipVersionView(waveletView, blip.getBlipId());
       waveletView.getUnsentBlips().add(blipVersionView);
     }
@@ -328,7 +332,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       // TODO(taton) The Wave robot Java API is buggy when processing end-of-lines. This still does
       // not work properly.
       StringBuilder sb = new StringBuilder();
-      textView.appendMarkup("<br/>\n");
+      sb.append('\n');
       mailUtil.mimeEntityToText(sb, message);
       sb.append('\n');
       textView.append(sb.toString());
