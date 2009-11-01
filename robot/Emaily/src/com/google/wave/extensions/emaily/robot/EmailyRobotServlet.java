@@ -16,14 +16,19 @@ package com.google.wave.extensions.emaily.robot;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.jdo.Extent;
+import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.Query;
 import javax.jdo.Transaction;
+import javax.jdo.identity.StringIdentity;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.james.mime4j.MimeIOException;
@@ -49,6 +54,7 @@ import com.google.wave.api.Wavelet;
 import com.google.wave.extensions.emaily.config.HostingProvider;
 import com.google.wave.extensions.emaily.data.BlipVersionView;
 import com.google.wave.extensions.emaily.data.DataAccess;
+import com.google.wave.extensions.emaily.data.EmailToProcess;
 import com.google.wave.extensions.emaily.data.PersistentEmail;
 import com.google.wave.extensions.emaily.data.WaveletView;
 import com.google.wave.extensions.emaily.email.MailUtil;
@@ -259,18 +265,49 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     PersistenceManager pm = pmFactory.getPersistenceManager();
     Transaction tx = pm.currentTransaction();
 
+    if (wavelet.hasDataDocument("Message-ID")) {
+      String messageId = wavelet.getDataDocument("Message-ID");
+      logger.info("Wavelet links to Message-ID: " + messageId);
+      Object objId = new StringIdentity(PersistentEmail.class, messageId);
+      try {
+        PersistentEmail email = (PersistentEmail) pm.getObjectById(objId);
+        if (email.getWaveletId() == null) {
+          // Attach the Wavelet ID to the email.
+          tx.begin();
+          email.setWaveletId(wavelet.getWaveletId());
+          pm.makePersistent(email);
+          tx.commit();
+
+        } else {
+          if (!email.getWaveletId().equals(wavelet.getWaveletId())) {
+            logger.warning("Wavelet ID mismatch for email with message ID " + messageId);
+            logger.warning("Expecting Wavelet ID " + wavelet.getWaveletId()
+                + " but email has Wavelet ID " + email.getWaveletId());
+          }
+        }
+      } catch (JDOObjectNotFoundException onf) {
+        onf.printStackTrace();
+      }
+    }
+
     try {
-      Extent<PersistentEmail> extent = pm.getExtent(PersistentEmail.class, false);
+      // Retrieve the IDs of the incoming messages to process.
+      Extent<EmailToProcess> extent = pm.getExtent(EmailToProcess.class, false);
       Query query = pm.newQuery(extent);
       @SuppressWarnings( { "unchecked" })
-      List<PersistentEmail> emails = (List<PersistentEmail>) query.execute();
+      List<EmailToProcess> emailsToProcess = (List<EmailToProcess>) query.execute();
+      if (emailsToProcess.isEmpty())
+        return;
+      Set<StringIdentity> ids = new HashSet<StringIdentity>();
+      for (EmailToProcess email : emailsToProcess)
+        ids.add(new StringIdentity(PersistentEmail.class, email.getMessageId()));
+
+      @SuppressWarnings( { "unchecked" })
+      Collection<PersistentEmail> emails = pm.getObjectsById(ids);
       for (PersistentEmail email : emails) {
         try {
           tx.begin();
           createWaveFromMessage(wavelet, email);
-          // TODO(taton) We should not delete the email here, but instead associate it with the Wave
-          // created for it somehow.
-          pm.deletePersistent(email);
           tx.commit();
         } catch (Exception exn) {
           exn.printStackTrace();
@@ -279,6 +316,12 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
             tx.rollback();
         }
       } // For loop
+
+      // Purge the EmailToProcess objects.
+      tx.begin();
+      for (EmailToProcess email : emailsToProcess)
+        pm.deletePersistent(email);
+      tx.commit();
 
     } finally {
       pm.close();
@@ -298,6 +341,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     participants.addAll(email.getWaveParticipants());
     Wavelet newWavelet = wavelet.createWavelet(participants, null);
     newWavelet.setTitle(message.getSubject());
+    newWavelet.setDataDocument("Message-ID", email.getMessageId());
     Blip blip = newWavelet.getRootBlip();
     TextView textView = blip.getDocument();
     textView.setAuthor(hostingProvider.getRobotWaveId());

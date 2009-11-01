@@ -7,12 +7,17 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URLDecoder;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import javax.jdo.Extent;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
+import javax.jdo.Query;
 import javax.jdo.Transaction;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -22,10 +27,12 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.james.mime4j.field.address.Address;
 import org.apache.james.mime4j.field.address.Mailbox;
 import org.apache.james.mime4j.message.Message;
+import org.apache.james.mime4j.parser.Field;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.config.HostingProvider;
+import com.google.wave.extensions.emaily.data.EmailToProcess;
 import com.google.wave.extensions.emaily.data.PersistentEmail;
 
 /**
@@ -37,6 +44,8 @@ import com.google.wave.extensions.emaily.data.PersistentEmail;
 public class IncomingEmailServlet extends HttpServlet {
   private static final long serialVersionUID = -3570174607499608832L;
   public static final String REQUEST_URI_PREFIX = "/_ah/mail/";
+/** A regexp that matches fields delimited with '<' and '>'. */
+  private static final Pattern markupPattern = Pattern.compile("\\s*<([^>]*)>");
 
   /**
    * Reads an InputStream into a byte array.
@@ -57,7 +66,7 @@ public class IncomingEmailServlet extends HttpServlet {
     }
     return os.toByteArray();
   }
-  
+
   private Logger logger = Logger.getLogger(IncomingEmailServlet.class.getName());
 
   // Injected dependencies
@@ -109,7 +118,17 @@ public class IncomingEmailServlet extends HttpServlet {
     if (logger.isLoggable(Level.FINE)) {
       logger.fine("Unprocessed email content:\n" + new String(content) + "\nEnd of email\n");
     }
-    
+
+    // Extract the references (i.e. ancestors in the thread).
+    Set<String> references = null;
+    Field refField = message.getHeader().getField("references");
+    if (refField != null) {
+      references = new HashSet<String>();
+      Matcher matcher = markupPattern.matcher(refField.getBody());
+      while (matcher.find())
+        references.add(matcher.group(1));
+    }
+
     // Extracts the Wave participants.
     Set<String> waveParticipants = new HashSet<String>();
     waveParticipants.add(mainWaveRecipient);
@@ -130,14 +149,22 @@ public class IncomingEmailServlet extends HttpServlet {
     }
     // TODO(taton) Handle cc'ed addresses as well.
 
-    String messageId = message.getMessageId();
-    if (messageId == null) {
+    String messageId = null;
+    if (message.getMessageId() == null) {
       logger.warning("Incoming email has no Message-ID:\n" + new String(content));
       // TODO(taton) Generate a message ID based on a hash of the email content?
       return;
+    } else {
+      Matcher matcher = markupPattern.matcher(message.getMessageId());
+      if (!matcher.find()) {
+        logger.warning("Incoming email has invalid Message-ID: " + message.getMessageId());
+        return;
+      }
+      messageId = matcher.group(1);
     }
 
-    final PersistentEmail email = new PersistentEmail(messageId, waveParticipants, content);
+    final PersistentEmail email = new PersistentEmail(messageId, references, waveParticipants,
+        content);
     storeMessage(email);
   }
 
@@ -154,6 +181,10 @@ public class IncomingEmailServlet extends HttpServlet {
       tx.begin();
       pm.makePersistent(email);
       tx.commit();
+      tx.begin();
+      pm.makePersistent(new EmailToProcess(email.getMessageId()));
+      tx.commit();
+      logger.info("Incoming email stored with ID " + pm.getObjectId(email));
     } finally {
       if (tx.isActive())
         tx.rollback();
