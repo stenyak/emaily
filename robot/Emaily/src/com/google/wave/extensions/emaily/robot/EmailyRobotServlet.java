@@ -266,6 +266,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     Transaction tx = pm.currentTransaction();
 
     if (wavelet.hasDataDocument("Message-ID")) {
+      tx.begin();
       String messageId = wavelet.getDataDocument("Message-ID");
       logger.info("Wavelet links to Message-ID: " + messageId);
       Object objId = new StringIdentity(PersistentEmail.class, messageId);
@@ -273,10 +274,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
         PersistentEmail email = (PersistentEmail) pm.getObjectById(objId);
         if (email.getWaveletId() == null) {
           // Attach the Wavelet ID to the email.
-          tx.begin();
           email.setWaveletId(wavelet.getWaveletId());
-          pm.makePersistent(email);
-          tx.commit();
 
         } else {
           if (!email.getWaveletId().equals(wavelet.getWaveletId())) {
@@ -288,6 +286,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       } catch (JDOObjectNotFoundException onf) {
         onf.printStackTrace();
       }
+      tx.commit();
     }
 
     try {
@@ -319,8 +318,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
 
       // Purge the EmailToProcess objects.
       tx.begin();
-      for (EmailToProcess email : emailsToProcess)
-        pm.deletePersistent(email);
+      pm.deletePersistentAll(emailsToProcess);
       tx.commit();
 
     } finally {
@@ -344,7 +342,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     newWavelet.setDataDocument("Message-ID", email.getMessageId());
     Blip blip = newWavelet.getRootBlip();
     TextView textView = blip.getDocument();
-    textView.setAuthor(hostingProvider.getRobotWaveId());
+    String author = null;
     if (message.getFrom() != null) {
       // Note: appendStyledText has a bug: the style does not apply to the last character.
       textView.appendStyledText(new StyledText("From: ", StyleType.BOLD));
@@ -352,6 +350,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       for (Mailbox from : message.getFrom()) {
         if (from == null)
           continue;
+        if (author == null)
+          author = hostingProvider.getRobotProxyForFromEmailAddress(from.getAddress());
         if (sb.length() > 0)
           sb.append(", ");
         sb.append(from.toString());
@@ -359,6 +359,9 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       textView.append(sb.toString());
       textView.appendMarkup("<br/>\n");
     }
+    if (author == null)
+      author = hostingProvider.getRobotWaveId();
+    textView.setAuthor(author);
     if (message.getTo() != null) {
       textView.appendStyledText(new StyledText("To: ", StyleType.BOLD));
       StringBuilder sb = new StringBuilder();
