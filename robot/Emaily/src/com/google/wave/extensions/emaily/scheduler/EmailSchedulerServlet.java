@@ -89,7 +89,7 @@ public class EmailSchedulerServlet extends HttpServlet {
         dataAccessProvider.get().commit();
       }
     } finally {
-      dataAccessProvider.get().rollback();
+      dataAccessProvider.get().close();
     }
   }
 }

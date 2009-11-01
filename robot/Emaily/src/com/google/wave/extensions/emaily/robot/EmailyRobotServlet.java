@@ -40,6 +40,7 @@ import com.google.inject.Singleton;
 import com.google.wave.api.AbstractRobotServlet;
 import com.google.wave.api.Blip;
 import com.google.wave.api.Event;
+import com.google.wave.api.EventType;
 import com.google.wave.api.RobotMessageBundle;
 import com.google.wave.api.StyleType;
 import com.google.wave.api.StyledText;
@@ -136,7 +137,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       logger.info(debugHelper.printWaveletViewInfo(waveletView));
       dataAccessProvider.get().commit();
     } finally {
-      dataAccessProvider.get().rollback();
+      dataAccessProvider.get().close();
     }
   }
 
@@ -158,12 +159,30 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * @param e The wave event.
    */
   private void processBlipEvent(WaveletView waveletView, Event e) {
-    // We are dealing only with blip events.
+    logger.finer("Started processing blip events");
     Blip blip = e.getBlip();
     if (blip == null) {
+      logger.fine("Not blip event, returning");
       return;
     }
+
+    // Extract the content
+    logger.finer("Extracting content");
+    String blipContent = blip.getDocument().getText();
+    if (blip.getBlipId().equals(waveletView.getRootBlipId())) {
+      // Remove the Wave Title from the root blip content.
+      blipContent = blipContent.substring(waveletView.getTitle().length()).trim();
+    }
+
+    String waveProxyIdOfUser = hostingProvider.getRobotProxyForFromEmailAddress(waveletView
+        .getEmail());
+    if (waveProxyIdOfUser.equals(blip.getCreator())) {
+      logger.fine("The blip is sent by the user itself, won't create a new blip from it");
+      return;
+    }
+
     // find the corresponding blip in the unsent ones
+    logger.finer("find the blip if it was already in the unsent list");
     BlipVersionView blipVersionView = null;
     for (BlipVersionView b : waveletView.getUnsentBlips()) {
       if (blip.getBlipId().equals(b.getBlipId())) {
@@ -172,19 +191,18 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       }
     }
 
-    // Extract the content
-    String blipContent = blip.getDocument().getText();
-    if (blip.getBlipId().equals(waveletView.getRootBlipId())) {
-      // Remove the Wave Title from the root blip content.
-      blipContent = blipContent.substring(blipContent.length()).trim();
-    }
-
     // If it did not exist yet, create one:
+    logger.finer("create one if not exist yet");
     if (blipVersionView == null) {
       if (blipContent.isEmpty()) {
-        // We don't create a new blip if it would be empty.
+        logger.fine("The blip content is empty, we don't create a new blip");
         return;
       }
+      if (e.getType() == EventType.BLIP_SUBMITTED) {
+        logger.fine("Blip submitted without edit: don't create a new version of it");
+        return;
+      }
+      // Otherwise, create a new BlipVersionWiew
       blipVersionView = new BlipVersionView(waveletView, blip.getBlipId());
       waveletView.getUnsentBlips().add(blipVersionView);
     }
@@ -237,8 +255,6 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * 
    * @param wavelet Handle to create new waves.
    */
-  // TODO(taton): Eliminate these @SuppressWarnings
-  @SuppressWarnings( { "unchecked" })
   private void processIncomingEmails(Wavelet wavelet) {
     PersistenceManager pm = pmFactory.getPersistenceManager();
     Transaction tx = pm.currentTransaction();
@@ -246,6 +262,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     try {
       Extent<PersistentEmail> extent = pm.getExtent(PersistentEmail.class, false);
       Query query = pm.newQuery(extent);
+      @SuppressWarnings( { "unchecked" })
       List<PersistentEmail> emails = (List<PersistentEmail>) query.execute();
       for (PersistentEmail email : emails) {
         try {
