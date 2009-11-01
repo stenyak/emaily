@@ -8,6 +8,7 @@ import java.net.HttpURLConnection;
 import java.net.URLDecoder;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.jdo.PersistenceManager;
@@ -105,7 +106,10 @@ public class IncomingEmailServlet extends HttpServlet {
     logger.info("Incoming message for Wave recipient: " + mainWaveRecipient);
     final byte[] content = readInputStream(input);
     final Message message = new Message(new ByteArrayInputStream(content));
-
+    if (logger.isLoggable(Level.FINE)) {
+      logger.fine("Unprocessed email content:\n" + new String(content) + "\nEnd of email\n");
+    }
+    
     // Extracts the Wave participants.
     Set<String> waveParticipants = new HashSet<String>();
     waveParticipants.add(mainWaveRecipient);
@@ -126,8 +130,14 @@ public class IncomingEmailServlet extends HttpServlet {
     }
     // TODO(taton) Handle cc'ed addresses as well.
 
-    final PersistentEmail email = new PersistentEmail(message.getMessageId(), waveParticipants,
-        content);
+    String messageId = message.getMessageId();
+    if (messageId == null) {
+      logger.warning("Incoming email has no Message-ID:\n" + new String(content));
+      // TODO(taton) Generate a message ID based on a hash of the email content?
+      return;
+    }
+
+    final PersistentEmail email = new PersistentEmail(messageId, waveParticipants, content);
     storeMessage(email);
   }
 

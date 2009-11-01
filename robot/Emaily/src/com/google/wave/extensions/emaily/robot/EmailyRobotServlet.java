@@ -300,7 +300,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     newWavelet.setTitle(message.getSubject());
     Blip blip = newWavelet.getRootBlip();
     TextView textView = blip.getDocument();
-    // textView.setAuthor(APPSPOT_ID + "@appspot.com");
+    textView.setAuthor(hostingProvider.getRobotWaveId());
     if (message.getFrom() != null) {
       // Note: appendStyledText has a bug: the style does not apply to the last character.
       textView.appendStyledText(new StyledText("From: ", StyleType.BOLD));

@@ -70,6 +70,12 @@ public class AppspotHostingProvider implements HostingProvider {
   }
 
   @Override
+  public String getRobotWaveId() {
+    String appId = isProductionVersion() ? appName : appVersion + ".latest." + appName;
+    return appId + "@appspot.com";
+  }
+
+  @Override
   public String getEmailAddressForWaveParticipantIdInEmailyDomain(String waveParticipantId) {
     int at = waveParticipantId.lastIndexOf('@');
     if (at < 0) {
