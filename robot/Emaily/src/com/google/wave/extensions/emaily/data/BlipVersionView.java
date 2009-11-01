@@ -63,7 +63,7 @@ public class BlipVersionView {
 
   @Persistent
   private long lastChangedTimestamp;
-  
+
   // This field is calculated when necessary. See EmailScheduler.java
   @NotPersistent
   private long timeToBecomeSendable;
@@ -133,7 +133,7 @@ public class BlipVersionView {
   public void setLastChangedTimestamp(long lastChangedTimestamp) {
     this.lastChangedTimestamp = lastChangedTimestamp;
   }
-  
+
   public long getTimeToBecomeSendable() {
     return timeToBecomeSendable;
   }
