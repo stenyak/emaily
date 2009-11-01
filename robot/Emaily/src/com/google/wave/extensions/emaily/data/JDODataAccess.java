@@ -88,17 +88,10 @@ public class JDODataAccess implements DataAccess {
   }
 
   @Override
-  public void rollback() {
+  public void close() {
     if (tx != null && tx.isActive()) {
       tx.rollback();
     }
-    close();
-  }
-
-  /**
-   * Delete the transaction and closes the persistence manager.
-   */
-  private void close() {
     tx = null;
 
     if (pm != null) {

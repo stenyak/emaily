@@ -40,6 +40,7 @@ import com.google.inject.Singleton;
 import com.google.wave.api.AbstractRobotServlet;
 import com.google.wave.api.Blip;
 import com.google.wave.api.Event;
+import com.google.wave.api.EventType;
 import com.google.wave.api.RobotMessageBundle;
 import com.google.wave.api.StyleType;
 import com.google.wave.api.StyledText;
@@ -136,7 +137,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       logger.info(debugHelper.printWaveletViewInfo(waveletView));
       dataAccessProvider.get().commit();
     } finally {
-      dataAccessProvider.get().rollback();
+      dataAccessProvider.get().close();
     }
   }
 
@@ -159,11 +160,28 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    */
   private void processBlipEvent(WaveletView waveletView, Event e) {
     // We are dealing only with blip events.
+    logger.finer("processing blip event");
     Blip blip = e.getBlip();
-    if (blip == null) {
+    if (blip == null)
       return;
+
+    // Extract the content
+    logger.finer("extracting content");
+    String blipContent = blip.getDocument().getText();
+    if (blip.getBlipId().equals(waveletView.getRootBlipId())) {
+      // Remove the Wave Title from the root blip content.
+      blipContent = blipContent.substring(waveletView.getTitle().length()).trim();
     }
+
+    // We do not want to resend the email to anyone who originally sent the email.
+    logger.finer("checking if the blip is created from an email form this person");
+    String waveProxyIdOfUser = hostingProvider.getRobotProxyForFromEmailAddress(waveletView
+        .getEmail());
+    if (waveProxyIdOfUser.equals(blip.getCreator()))
+      return;
+
     // find the corresponding blip in the unsent ones
+    logger.finer("find the blip if it was already in the unsent list");
     BlipVersionView blipVersionView = null;
     for (BlipVersionView b : waveletView.getUnsentBlips()) {
       if (blip.getBlipId().equals(b.getBlipId())) {
@@ -172,19 +190,15 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       }
     }
 
-    // Extract the content
-    String blipContent = blip.getDocument().getText();
-    if (blip.getBlipId().equals(waveletView.getRootBlipId())) {
-      // Remove the Wave Title from the root blip content.
-      blipContent = blipContent.substring(blipContent.length()).trim();
-    }
-
     // If it did not exist yet, create one:
+    logger.finer("create one if not exist yet");
     if (blipVersionView == null) {
-      if (blipContent.isEmpty()) {
-        // We don't create a new blip if it would be empty.
+      // If the blip content is empty, we don't create a new one.
+      if (blipContent.isEmpty())
         return;
-      }
+      // If the blip was not edited, just submitted, then it means that it is not changed.
+      if (e.getType() == EventType.BLIP_SUBMITTED)
+        return;
       blipVersionView = new BlipVersionView(waveletView, blip.getBlipId());
       waveletView.getUnsentBlips().add(blipVersionView);
     }
@@ -237,8 +251,6 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * 
    * @param wavelet Handle to create new waves.
    */
-  // TODO(taton): Eliminate these @SuppressWarnings
-  @SuppressWarnings( { "unchecked" })
   private void processIncomingEmails(Wavelet wavelet) {
     PersistenceManager pm = pmFactory.getPersistenceManager();
     Transaction tx = pm.currentTransaction();
@@ -246,6 +258,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     try {
       Extent<PersistentEmail> extent = pm.getExtent(PersistentEmail.class, false);
       Query query = pm.newQuery(extent);
+      @SuppressWarnings( { "unchecked" })
       List<PersistentEmail> emails = (List<PersistentEmail>) query.execute();
       for (PersistentEmail email : emails) {
         try {
@@ -315,7 +328,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       // TODO(taton) The Wave robot Java API is buggy when processing end-of-lines. This still does
       // not work properly.
       StringBuilder sb = new StringBuilder();
-      sb.append('\n');
+      textView.appendMarkup("<br/>\n");
       mailUtil.mimeEntityToText(sb, message);
       sb.append('\n');
       textView.append(sb.toString());

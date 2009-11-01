@@ -50,12 +50,14 @@ public interface DataAccess {
   public void persistWaveletView(WaveletView waveletView);
 
   /**
-   * Rolls back the current transaction. Following operations will open a new transaction.
+   * Rolls back the current transaction if it was not committed, and closes it. Following operations
+   * will open a new transaction.
    */
-  public void rollback();
+  public void close();
 
   /**
-   * Commits changes in the current transaction. Following operations will open a new transaction.
+   * Commits changes in the current transaction and closes it. Following operations will open a new
+   * transaction.
    */
   public void commit();
 
