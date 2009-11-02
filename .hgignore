@@ -2,8 +2,6 @@
 \.swp$
 \.orig$
 \.local$
-\.hgignore$
 eclipse-workspace
 workspace
 WEB-INF/classes/.*\.class$
-WEB-INF/appengine-web.xml
