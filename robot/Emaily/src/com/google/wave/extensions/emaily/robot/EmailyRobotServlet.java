@@ -34,7 +34,6 @@ import org.apache.james.mime4j.parser.MimeEntityConfig;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.google.apphosting.api.ApiProxy;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
