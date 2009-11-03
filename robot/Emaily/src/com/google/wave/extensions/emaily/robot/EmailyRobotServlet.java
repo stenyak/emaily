@@ -76,10 +76,10 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private final Provider<DataAccess> dataAccessProvider;
   private final MailUtil mailUtil;
 
+  private static final String dummyEmailId = "xyz@abc.com";
   private static final String introText
-      = "Send messages to your friend with email xyz@abc.com, by adding "
-        + ApiProxy.getCurrentEnvironment().getAppId()
-        + "+xyz+abc.com@appspot.com as a participant to this wave.";
+      = "Send messages to your friend with email %s, by adding %s " 
+        + "as a participant to this wave.";
 
   private MimeEntityConfig mimeEntityConfig = new MimeEntityConfig();
 
@@ -270,7 +270,6 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    */
   private void handleRobotAdded(RobotMessageBundle bundle) {
     logger.info("Robot added to participants");
-    logger.info("id: " + hostingProvider.getRobotProxyForFromEmailAddress("a@b.c"));
     // bundle.getWavelet().appendBlip().getDocument().append(introText) will 
     // display the text twice due to
     // http://code.google.com/p/google-wave-resources/issues/detail?id=354
@@ -278,7 +277,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     
     Blip newBlip = bundle.getWavelet().appendBlip();
     newBlip.getDocument().delete();
-    newBlip.getDocument().append(introText);      
+    newBlip.getDocument().append(String.format(introText, dummyEmailId, 
+            hostingProvider.getRobotProxyForFromEmailAddress(dummyEmailId)));      
   }
   
   /**
