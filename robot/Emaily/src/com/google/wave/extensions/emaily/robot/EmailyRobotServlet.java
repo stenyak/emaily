@@ -108,7 +108,9 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       String email = hostingProvider.getEmailAddressFromRobotProxyFor(proxyingFor);
       processWaveletViewModifications(bundle, email);
     } else if (bundle.wasSelfAdded()) {
-      handleRobotAdded(bundle);
+      // TODO(karan): uncomment the call to handleRobotAdded() when the form to
+      // allow email recipients is implemented.
+      // handleRobotAdded(bundle);
     }
     processIncomingEmails(bundle.getWavelet());
   }
