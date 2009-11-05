@@ -7,17 +7,14 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URLDecoder;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.jdo.Extent;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
-import javax.jdo.Query;
 import javax.jdo.Transaction;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -163,18 +160,20 @@ public class IncomingEmailServlet extends HttpServlet {
       messageId = matcher.group(1);
     }
 
-    final PersistentEmail email = new PersistentEmail(messageId, references, waveParticipants,
-        content);
-    storeMessage(email);
+    final PersistentEmail pe = new PersistentEmail(messageId, references, waveParticipants);
+    final EmailToProcess etp = new EmailToProcess(messageId, content);
+    storeMessage(etp, pe);
   }
 
   /**
-   * Stores a message in the datastore.
+   * Stores an incoming email message in the data store.
    * 
-   * @param email The message to store.
+   * @param rawEmail The raw email to be processed the next time the robot is triggered from a Wave
+   *          server.
+   * @param email The persistent email message to store.
    * @throws IOException
    */
-  public void storeMessage(PersistentEmail email) throws IOException {
+  public void storeMessage(EmailToProcess rawEmail, PersistentEmail email) throws IOException {
     PersistenceManager pm = pmFactory.getPersistenceManager();
     Transaction tx = pm.currentTransaction();
     try {
@@ -182,7 +181,7 @@ public class IncomingEmailServlet extends HttpServlet {
       pm.makePersistent(email);
       tx.commit();
       tx.begin();
-      pm.makePersistent(new EmailToProcess(email.getMessageId()));
+      pm.makePersistent(rawEmail);
       tx.commit();
       logger.info("Incoming email stored with ID " + pm.getObjectId(email));
     } finally {

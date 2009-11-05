@@ -17,12 +17,13 @@ package com.google.wave.extensions.emaily.robot;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import javax.jdo.Extent;
 import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
@@ -269,9 +270,9 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       tx.begin();
       String messageId = wavelet.getDataDocument("Message-ID");
       logger.info("Wavelet links to Message-ID: " + messageId);
-      Object objId = new StringIdentity(PersistentEmail.class, messageId);
       try {
-        PersistentEmail email = (PersistentEmail) pm.getObjectById(objId);
+        PersistentEmail email = (PersistentEmail) pm
+            .getObjectById(PersistentEmail.class, messageId);
         if (email.getWaveletId() == null) {
           // Attach the Wavelet ID to the email.
           email.setWaveletId(wavelet.getWaveletId());
@@ -291,22 +292,25 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
 
     try {
       // Retrieve the IDs of the incoming messages to process.
-      Extent<EmailToProcess> extent = pm.getExtent(EmailToProcess.class, false);
-      Query query = pm.newQuery(extent);
+      Query query = pm.newQuery(EmailToProcess.class);
       @SuppressWarnings( { "unchecked" })
       List<EmailToProcess> emailsToProcess = (List<EmailToProcess>) query.execute();
+
       if (emailsToProcess.isEmpty())
         return;
+      Map<String, EmailToProcess> rawMap = new HashMap<String, EmailToProcess>();
       Set<StringIdentity> ids = new HashSet<StringIdentity>();
-      for (EmailToProcess email : emailsToProcess)
+      for (EmailToProcess email : emailsToProcess) {
         ids.add(new StringIdentity(PersistentEmail.class, email.getMessageId()));
+        rawMap.put(email.getMessageId(), email);
+      }
 
       @SuppressWarnings( { "unchecked" })
       Collection<PersistentEmail> emails = pm.getObjectsById(ids);
       for (PersistentEmail email : emails) {
         try {
           tx.begin();
-          createWaveFromMessage(wavelet, email);
+          createWaveFromMessage(wavelet, rawMap.get(email.getMessageId()), email);
           tx.commit();
         } catch (Exception exn) {
           exn.printStackTrace();
@@ -330,11 +334,12 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * Creates the Wave representing an email.
    * 
    * @param wavelet Handle to create new Waves.
+   * @param raw The raw unprocessed email to process.
    * @param message The incoming email to create the wave of.
    */
-  private void createWaveFromMessage(Wavelet wavelet, PersistentEmail email)
+  private void createWaveFromMessage(Wavelet wavelet, EmailToProcess raw, PersistentEmail email)
       throws MimeIOException, IOException {
-    Message message = new Message(email.getInputStream(), mimeEntityConfig);
+    Message message = new Message(raw.getInputStream(), mimeEntityConfig);
     List<String> participants = new ArrayList<String>();
     participants.addAll(email.getWaveParticipants());
     Wavelet newWavelet = wavelet.createWavelet(participants, null);
