@@ -16,6 +16,7 @@
 package com.google.wave.extensions.emaily.scheduler;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Calendar;
 import java.util.List;
 import java.util.logging.Logger;
@@ -31,6 +32,7 @@ import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.config.EmailyConfig;
 import com.google.wave.extensions.emaily.data.DataAccess;
 import com.google.wave.extensions.emaily.data.WaveletView;
+import com.google.wave.extensions.emaily.email.EmailSender.EmailSendingException;
 
 /**
  * @author dlux
@@ -81,12 +83,20 @@ public class EmailSchedulerServlet extends HttpServlet {
           + emailyConfig.getLong(MAX_SERVING_TIME) * 1000;
       List<?> ids = dataAccessProvider.get().getWaveletIdsToSend();
       for (Object idObj : ids) {
-        if (Calendar.getInstance().getTimeInMillis() >= endTime) {
-          break;
+        try {
+          if (Calendar.getInstance().getTimeInMillis() >= endTime) {
+            break;
+          }
+          WaveletView waveletView = dataAccessProvider.get().getWaveletView((String) idObj);
+          sender.SendScheduledEmail(waveletView);
+          dataAccessProvider.get().commit();
+        } catch (EmailSendingException e) {
+          // If it cannot send email, we dumps the error to the log and continue with the next
+          // email. The next cron even will again pick up the same email, but the others in the
+          // queue are also processed.
+          e.printStackTrace();
+          dataAccessProvider.get().close();
         }
-        WaveletView waveletView = dataAccessProvider.get().getWaveletView((String) idObj);
-        sender.SendScheduledEmail(waveletView);
-        dataAccessProvider.get().commit();
       }
     } finally {
       dataAccessProvider.get().close();

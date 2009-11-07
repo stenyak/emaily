@@ -24,6 +24,8 @@ import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
+import com.google.appengine.api.datastore.Text;
+
 /**
  * A blip version object, which stores the current state of a blip in a wavelet view.
  * 
@@ -53,7 +55,7 @@ public class BlipVersionView {
   private List<String> participants;
 
   @Persistent
-  private String content;
+  private Text content;
 
   @Persistent
   private long firstEditedTimestamp;
@@ -103,11 +105,13 @@ public class BlipVersionView {
   }
 
   public String getContent() {
-    return content;
+    if (content == null)
+      return null;
+    return content.getValue();
   }
 
   public void setContent(String content) {
-    this.content = content;
+    this.content = new Text(content);
   }
 
   public long getFirstEditedTimestamp() {

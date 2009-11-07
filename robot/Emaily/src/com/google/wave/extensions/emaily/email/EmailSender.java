@@ -34,6 +34,23 @@ import com.google.inject.Singleton;
  */
 @Singleton
 public class EmailSender {
+  public class EmailSendingException extends RuntimeException {
+    public EmailSendingException() {
+      super();
+    }
+
+    public EmailSendingException(String message, Throwable cause) {
+      super(message, cause);
+    }
+
+    public EmailSendingException(String message) {
+      super(message);
+    }
+
+    public EmailSendingException(Throwable cause) {
+      super(cause);
+    }
+  }
   /**
    * Send simple text email.
    * 
@@ -58,8 +75,7 @@ public class EmailSender {
       msg.setText(body);
       Transport.send(msg);
     } catch (MessagingException e) {
-      // TODO(dlux): Need to add better error handling here.
-      throw new RuntimeException("Cannot send email from: " + from + ", to:" + recipient, e);
+      throw new EmailSendingException("Cannot send email from: " + from + ", to:" + recipient, e);
     }
   }
 }
