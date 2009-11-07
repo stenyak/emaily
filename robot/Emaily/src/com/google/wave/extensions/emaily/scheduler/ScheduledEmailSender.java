@@ -95,6 +95,7 @@ public class ScheduledEmailSender {
 
     // Set the subject
     String subject = waveletView.getTitle();
+    if (subject.isEmpty()) subject = "(no subject)";
 
     // Build the body
     StringBuilder body = new StringBuilder();
