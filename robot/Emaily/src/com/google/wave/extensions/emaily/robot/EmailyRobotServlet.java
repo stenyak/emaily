@@ -75,6 +75,11 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private final Provider<DataAccess> dataAccessProvider;
   private final MailUtil mailUtil;
 
+  private static final String dummyEmailId = "xyz@abc.com";
+  private static final String introText
+      = "Send messages to your friend with email %s, by adding %s " 
+        + "as a participant to this wave.";
+
   private MimeEntityConfig mimeEntityConfig = new MimeEntityConfig();
 
   @Inject
@@ -102,6 +107,10 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     if (!proxyingFor.isEmpty()) {
       String email = hostingProvider.getEmailAddressFromRobotProxyFor(proxyingFor);
       processWaveletViewModifications(bundle, email);
+    } else if (bundle.wasSelfAdded()) {
+      // TODO(karan): uncomment the call to handleRobotAdded() when the form to
+      // allow email recipients is implemented.
+      // handleRobotAdded(bundle);
     }
     processIncomingEmails(bundle.getWavelet());
   }
@@ -240,14 +249,39 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    */
   private String getProxyingFor() {
     JSONObject json = (JSONObject) reqProvider.get().getAttribute("jsonObject");
-    try {
-      String proxyingFor = json.getString("proxyingFor");
-      return proxyingFor == null ? "" : proxyingFor;
-    } catch (JSONException e) {
-      throw new RuntimeException("JSON error", e);
+    if (json.has("proxyingFor")) {
+      try {
+        String proxyingFor = json.getString("proxyingFor");
+        return proxyingFor == null ? "" : proxyingFor;
+      } catch (JSONException e) {
+        throw new RuntimeException("JSON error", e);
+      }
+    } else {
+      return "";
     }
   }
-
+  
+  /**
+   * Handle when the robot is added as a participant.
+   * An introduction blip is added to the wave if robot is added 
+   * as a participant without sub address, i.e., adding emaily-wave@appspot.com
+   * will trigger a blip, but emaily-wave+abc+xyz.com@appspot.com will not.
+   *   
+   * @param bundle RobotMessageBundle received from the Wave Server.
+   */
+  private void handleRobotAdded(RobotMessageBundle bundle) {
+    logger.info("Robot added to participants");
+    // bundle.getWavelet().appendBlip().getDocument().append(introText) will 
+    // display the text twice due to
+    // http://code.google.com/p/google-wave-resources/issues/detail?id=354
+    // TODO(karan) Change this once the above Wave API issue is fixed.
+    
+    Blip newBlip = bundle.getWavelet().appendBlip();
+    newBlip.getDocument().delete();
+    newBlip.getDocument().append(String.format(introText, dummyEmailId, 
+            hostingProvider.getRobotProxyForFromEmailAddress(dummyEmailId)));      
+  }
+  
   /**
    * Processes the incoming emails accumulated so far: creates one new wave per email.
    * 
