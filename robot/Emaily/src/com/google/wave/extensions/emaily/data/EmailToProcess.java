@@ -27,6 +27,13 @@ public class EmailToProcess {
   private Blob blob;
 
   /**
+   * The date (in milliseconds since epoch) when this email has been processed unsuccessfully. Null
+   * if the email has never been processed yet.
+   */
+  @Persistent
+  private Long processingDate;
+
+  /**
    * Initializes an email to process.
    * 
    * @param id The email message ID.
@@ -40,6 +47,16 @@ public class EmailToProcess {
   /** @returns The email message ID. */
   public String getMessageId() {
     return messageId;
+  }
+
+  /** @returns The first date when this email has been processed unsuccessfully. */
+  public Long getProcessingDate() {
+    return this.processingDate;
+  }
+
+  /** Sets the date this email has been processed. */
+  public void setProcessingDate(long date) {
+    this.processingDate = date;
   }
 
   /** @return An InputStream for the email content. */

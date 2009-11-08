@@ -29,6 +29,10 @@ public class PersistentEmail implements Serializable {
   @Key
   private String waveletId;
 
+  /** The wave ID of this message. */
+  @Persistent
+  private String waveId;
+
   /** The message IDs of the ancestors to this email in the thread. */
   @Persistent
   private Set<String> references;
@@ -59,12 +63,19 @@ public class PersistentEmail implements Serializable {
     return this.waveletId;
   }
 
+  /** @return The ID of the Wave containing this message. */
+  public String getWaveId() {
+    return this.waveId;
+  }
+
   /**
-   * Sets the ID of the Wavelet containing this message.
+   * Sets the Wave ID and the Wavelet ID this email message is part of.
    * 
+   * @param waveId The Wave ID.
    * @param waveletId The Wavelet ID.
    */
-  public void setWaveletId(String waveletId) {
+  public void setWaveAndWaveletId(String waveId, String waveletId) {
+    this.waveId = waveId;
     this.waveletId = waveletId;
   }
 
