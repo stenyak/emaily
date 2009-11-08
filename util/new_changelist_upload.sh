@@ -8,12 +8,13 @@ hg status
 read x
 /bin/echo -n "Base revision: "
 read base_rev
-/bin/echo -n "Describe the change: "
+/bin/echo -n "Describe the change in 1 line: "
 read change
-change="$change
-Base rev: $base_rev"
+description="$change
+Base rev: $base_rev
+Patch 1 rev: $current_rev"
 rietveld_upload.py \
   -s emaily-codereview.appspot.com \
-  -d "$change" \
-  -m "Revision: $current_rev" \
+  -d "$description" \
+  -m "$change" \
   --rev=$base_rev

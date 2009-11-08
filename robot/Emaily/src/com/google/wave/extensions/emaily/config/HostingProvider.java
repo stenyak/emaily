@@ -63,6 +63,7 @@ public interface HostingProvider {
    * 
    * @param address The email participant address.
    * @return The Wave participant ID proxying for the email participant.
+   * @throws IllegalArgumentException if the input is not valid.
    */
   public String getRobotProxyForFromEmailAddress(String address);
   
@@ -89,4 +90,9 @@ public interface HostingProvider {
    *         can be replied to.
    */
   public String getWaveletEmailAddress(String emailAddressToken);
+  
+  /**
+   * @return The URL of the robot with a trailing '/'.
+   */
+  public String getRobotURL();
 }
