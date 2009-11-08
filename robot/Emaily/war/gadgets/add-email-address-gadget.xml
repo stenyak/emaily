@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><Module><ModulePrefs title="Wave Emaily Target Selection Gadget"><Require feature="wave" /><Require feature="dynamic-height"/><Require feature="locked-domain"/></ModulePrefs>
+<Content type="html"><![CDATA[
+<form action="#" onSubmit="return formSubmitted()">
+<input type="text" name="email" value="" id="email_input">
+<input type="submit" value="Add" id="submit">
+</form>
+
+<script>
+
+var EMAIL_KEY_PREFIX = "email:";
+
+var submitObj = document.getElementById('submit');
+var inputObj = document.getElementById('email_input');
+
+function formSubmitted() {
+  wave.getState().submitValue(EMAIL_KEY_PREFIX + inputObj.value, "1");
+  inputObj.value = "";
+  return false;
+}
+
+function stateUpdated() {
+  gadgets.window.adjustHeight();
+  return;
+  var addInProgress=false;
+  var state = wave.getState();
+  if (!state) return;  // Sometimes this function is called too early.
+  var keys = state.getKeys();
+  var adding = "";  
+  for (var i = 0; i < keys.length; ++i) {
+    if (keys[i].indexOf(EMAIL_KEY_PREFIX) == 0) {
+      adding += " " + keys[i].substring(EMAIL_KEY_PREFIX.length);
+    }
+  }
+  
+  if (adding.length > 0) {
+    submitObj.value = "Adding" + adding;
+    inputObj.disabled = true;
+    submitObj.disabled = true;
+  } else {
+    submitObj.value = "Add";
+    inputObj.disabled = false;
+    submitObj.disabled = false;
+  }
+}
+
+function init() {
+  if (wave && wave.isInWaveContainer()) {
+    wave.setStateCallback(stateUpdated);
+  }
+}
+
+gadgets.util.registerOnLoadHandler(init);
+
+</script>
+]]></Content>
+</Module>

@@ -139,4 +139,16 @@ public class AppspotHostingProvider implements HostingProvider {
     return emailAddressToken + "@" + appName + ".appspotmail.com";
   }
 
+  @Override
+  public String getRobotURL() {
+    // TODO(dlux): add "x.latest" handling.
+    return "http://" + appName + ".appspot.com/";
+  }
+
+  @Override
+  public String getRobotWaveParticipantId() {
+    // TODO(dlux): add "x.latest" handling.
+    return appName + "@appspot.com";
+  }
+
 }
