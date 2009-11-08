@@ -9,6 +9,8 @@ import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
+import com.google.wave.api.Wavelet;
+
 /**
  * Container for long-term email messages storage. We only keep a few elements from the incoming
  * emails.
@@ -28,6 +30,10 @@ public class PersistentEmail implements Serializable {
   /** The wavelet ID this message is part of. */
   @Key
   private String waveletId;
+
+  /** The wave ID of this message. */
+  @Persistent
+  private String waveId;
 
   /** The message IDs of the ancestors to this email in the thread. */
   @Persistent
@@ -59,12 +65,19 @@ public class PersistentEmail implements Serializable {
     return this.waveletId;
   }
 
+  /** @return The ID of the Wave containing this message. */
+  public String getWaveId() {
+    return this.waveId;
+  }
+
   /**
    * Sets the ID of the Wavelet containing this message.
    * 
+   * @param waveId The Wave ID.
    * @param waveletId The Wavelet ID.
    */
-  public void setWaveletId(String waveletId) {
+  public void setWaveletId(String waveId, String waveletId) {
+    this.waveId = waveId;
     this.waveletId = waveletId;
   }
 

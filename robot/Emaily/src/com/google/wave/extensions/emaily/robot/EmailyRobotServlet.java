@@ -83,9 +83,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private final MailUtil mailUtil;
 
   private static final String dummyEmailId = "xyz@abc.com";
-  private static final String introText
-      = "Send messages to your friend with email %s, by adding %s " 
-        + "as a participant to this wave.";
+  private static final String introText = "Send messages to your friend with email %s, by adding %s "
+      + "as a participant to this wave.";
 
   private MimeEntityConfig mimeEntityConfig = new MimeEntityConfig();
 
@@ -119,7 +118,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       // allow email recipients is implemented.
       // handleRobotAdded(bundle);
     }
-    processIncomingEmails(bundle.getWavelet());
+    processIncomingEmails(bundle);
   }
 
   /**
@@ -267,28 +266,28 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       return "";
     }
   }
-  
+
   /**
-   * Handle when the robot is added as a participant.
-   * An introduction blip is added to the wave if robot is added 
-   * as a participant without sub address, i.e., adding emaily-wave@appspot.com
-   * will trigger a blip, but emaily-wave+abc+xyz.com@appspot.com will not.
-   *   
+   * Handle when the robot is added as a participant. An introduction blip is added to the wave if
+   * robot is added as a participant without sub address, i.e., adding emaily-wave@appspot.com will
+   * trigger a blip, but emaily-wave+abc+xyz.com@appspot.com will not.
+   * 
    * @param bundle RobotMessageBundle received from the Wave Server.
    */
   private void handleRobotAdded(RobotMessageBundle bundle) {
     logger.info("Robot added to participants");
-    // bundle.getWavelet().appendBlip().getDocument().append(introText) will 
+    // bundle.getWavelet().appendBlip().getDocument().append(introText) will
     // display the text twice due to
     // http://code.google.com/p/google-wave-resources/issues/detail?id=354
     // TODO(karan) Change this once the above Wave API issue is fixed.
-    
+
     Blip newBlip = bundle.getWavelet().appendBlip();
     newBlip.getDocument().delete();
-    newBlip.getDocument().append(String.format(introText, dummyEmailId, 
-            hostingProvider.getRobotProxyForFromEmailAddress(dummyEmailId)));      
+    newBlip.getDocument().append(
+        String.format(introText, dummyEmailId, hostingProvider
+            .getRobotProxyForFromEmailAddress(dummyEmailId)));
   }
-  
+
   /**
    * Processes the incoming emails accumulated so far: creates one new wave per email.
    * 
@@ -296,7 +295,9 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * 
    * @param wavelet Handle to create new waves.
    */
-  private void processIncomingEmails(Wavelet wavelet) {
+  private void processIncomingEmails(RobotMessageBundle bundle) {
+    final Wavelet wavelet = bundle.getWavelet();
+
     PersistenceManager pm = pmFactory.getPersistenceManager();
     Transaction tx = pm.currentTransaction();
 
@@ -309,7 +310,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
             .getObjectById(PersistentEmail.class, messageId);
         if (email.getWaveletId() == null) {
           // Attach the Wavelet ID to the email.
-          email.setWaveletId(wavelet.getWaveletId());
+          email.setWaveletId(wavelet.getWaveId(), wavelet.getWaveletId());
 
         } else {
           if (!email.getWaveletId().equals(wavelet.getWaveletId())) {
@@ -339,12 +340,65 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
         rawMap.put(email.getMessageId(), email);
       }
 
+      // List of the emails that are successfully processed.
+      List<EmailToProcess> processed = new ArrayList<EmailToProcess>();
+      
       @SuppressWarnings( { "unchecked" })
       Collection<PersistentEmail> emails = pm.getObjectsById(ids);
       for (PersistentEmail email : emails) {
+        EmailToProcess raw = rawMap.get(email.getMessageId());
         try {
           tx.begin();
-          createWaveFromMessage(wavelet, rawMap.get(email.getMessageId()), email);
+
+          // The wave/wavelet ID corresponding to this thread if any, null if none.
+          String waveId = null;
+          String waveletId = null;
+
+          if (email.getReferences() != null) {
+            // Look for a Wavelet ID in the message references.
+            Set<StringIdentity> refIds = new HashSet<StringIdentity>();
+            for (String refId : email.getReferences())
+              refIds.add(new StringIdentity(PersistentEmail.class, refId));
+            @SuppressWarnings( { "unchecked" })
+            Collection<PersistentEmail> references = pm.getObjectsById(refIds);
+            // We pick the first reference we find.
+            for (PersistentEmail reference : references) {
+              if (reference.getWaveletId() == null)
+                continue;
+              if (!reference.getWaveletId().isEmpty()) {
+                waveId = reference.getWaveId();
+                waveletId = reference.getWaveletId();
+                break;
+              }
+            }
+
+            if ((waveletId == null) && !references.isEmpty()) {
+              // Postpone the processing of this email until its references are linked to the
+              // corresponding Wavelet.
+              continue;
+            }
+          }
+
+          Message message = new Message(raw.getInputStream(), mimeEntityConfig);
+          Blip emailBlip = null; // the blip that will contain the message content.
+          if (waveletId == null) {
+            // We could not link this message to an existing Wavelet:
+            // create a new Wavelet and write message to the root blip.
+            List<String> participants = new ArrayList<String>();
+            participants.addAll(email.getWaveParticipants());
+            Wavelet newWavelet = wavelet.createWavelet(participants, null);
+            newWavelet.setTitle(message.getSubject());
+            newWavelet.setDataDocument("Message-ID", email.getMessageId());
+            emailBlip = newWavelet.getRootBlip();
+          } else {
+            // There is a Wavelet for this thread: append message to a new blip.
+            email.setWaveletId(waveId, waveletId);
+            Wavelet existingWavelet = bundle.getWavelet(waveId, waveletId);
+            emailBlip = existingWavelet.appendBlip();
+          }
+
+          writeMessageToBlip(message, emailBlip);
+          processed.add(raw);
           tx.commit();
         } catch (Exception exn) {
           exn.printStackTrace();
@@ -354,9 +408,9 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
         }
       } // For loop
 
-      // Purge the EmailToProcess objects.
+      // Purge the EmailToProcess objects that have been successfully processed.
       tx.begin();
-      pm.deletePersistentAll(emailsToProcess);
+      pm.deletePersistentAll(processed);
       tx.commit();
 
     } finally {
@@ -365,21 +419,12 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   }
 
   /**
-   * Creates the Wave representing an email.
+   * Formats an email into a Blip.
    * 
-   * @param wavelet Handle to create new Waves.
-   * @param raw The raw unprocessed email to process.
-   * @param message The incoming email to create the wave of.
+   * @param message The incoming email to format.
+   * @param blip The blip to write into.
    */
-  private void createWaveFromMessage(Wavelet wavelet, EmailToProcess raw, PersistentEmail email)
-      throws MimeIOException, IOException {
-    Message message = new Message(raw.getInputStream(), mimeEntityConfig);
-    List<String> participants = new ArrayList<String>();
-    participants.addAll(email.getWaveParticipants());
-    Wavelet newWavelet = wavelet.createWavelet(participants, null);
-    newWavelet.setTitle(message.getSubject());
-    newWavelet.setDataDocument("Message-ID", email.getMessageId());
-    Blip blip = newWavelet.getRootBlip();
+  private void writeMessageToBlip(Message message, Blip blip) throws MimeIOException, IOException {
     TextView textView = blip.getDocument();
     String author = null;
     if (message.getFrom() != null) {
