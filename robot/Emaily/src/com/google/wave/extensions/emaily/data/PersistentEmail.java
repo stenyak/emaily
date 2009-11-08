@@ -69,12 +69,12 @@ public class PersistentEmail implements Serializable {
   }
 
   /**
-   * Sets the ID of the Wavelet containing this message.
+   * Sets the Wave ID and the Wavelet ID this email message is part of.
    * 
    * @param waveId The Wave ID.
    * @param waveletId The Wavelet ID.
    */
-  public void setWaveletId(String waveId, String waveletId) {
+  public void setWaveAndWaveletId(String waveId, String waveletId) {
     this.waveId = waveId;
     this.waveletId = waveletId;
   }

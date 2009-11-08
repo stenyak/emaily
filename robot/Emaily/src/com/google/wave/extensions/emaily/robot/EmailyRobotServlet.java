@@ -365,7 +365,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       PersistentEmail email = (PersistentEmail) pm.getObjectById(PersistentEmail.class, messageId);
       if (email.getWaveletId() == null) {
         // Attach the Wavelet ID to the email.
-        email.setWaveletId(wavelet.getWaveId(), wavelet.getWaveletId());
+        email.setWaveAndWaveletId(wavelet.getWaveId(), wavelet.getWaveletId());
 
       } else {
         if (!email.getWaveletId().equals(wavelet.getWaveletId())) {
@@ -479,10 +479,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
         else
           processingDate = raw.getProcessingDate();
 
-        long processingDelay = Calendar.getInstance().getTimeInMillis() - processingDate;
-        if (processingDelay < 0)
-          processingDelay = 0;
         // If the processing delay gets too long, we give up and create a new wave.
+        long processingDelay = Calendar.getInstance().getTimeInMillis() - processingDate;
         if (processingDelay < config.getLong(PROCESS_EMAIL_MAX_DELAY) * 1000)
           return false;
       }
@@ -502,7 +500,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       emailBlip = newWavelet.getRootBlip();
     } else {
       // There is a Wavelet for this thread: append message to a new blip.
-      email.setWaveletId(threadWavelet.getWaveId(), threadWavelet.getWaveletId());
+      email.setWaveAndWaveletId(threadWavelet.getWaveId(), threadWavelet.getWaveletId());
       emailBlip = threadWavelet.appendBlip();
     }
 
