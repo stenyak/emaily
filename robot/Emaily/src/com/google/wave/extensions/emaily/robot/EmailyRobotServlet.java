@@ -16,6 +16,7 @@ package com.google.wave.extensions.emaily.robot;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,6 +54,7 @@ import com.google.wave.api.StyleType;
 import com.google.wave.api.StyledText;
 import com.google.wave.api.TextView;
 import com.google.wave.api.Wavelet;
+import com.google.wave.extensions.emaily.config.EmailyConfig;
 import com.google.wave.extensions.emaily.config.HostingProvider;
 import com.google.wave.extensions.emaily.data.BlipVersionView;
 import com.google.wave.extensions.emaily.data.DataAccess;
@@ -73,6 +75,8 @@ import com.google.wave.extensions.emaily.util.DebugHelper;
 public class EmailyRobotServlet extends AbstractRobotServlet {
   private static final long serialVersionUID = 8878209094937861353L;
 
+  private static final String PROCESS_EMAIL_MAX_DELAY = "incoming.process_email_max_delay";
+
   // Injected dependencies
   private final HostingProvider hostingProvider;
   private final Provider<HttpServletRequest> reqProvider;
@@ -82,6 +86,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private final DebugHelper debugHelper;
   private final Provider<DataAccess> dataAccessProvider;
   private final MailUtil mailUtil;
+  private final EmailyConfig config;
 
   private static final String introText = "Emaily helps you sending emails from wave.\n"
       + "Type an email address below, and click 'Add' to add it as an email recipient.\n";
@@ -93,7 +98,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   public EmailyRobotServlet(HostingProvider hostingProvider,
       Provider<HttpServletRequest> reqProvider, PersistenceManagerFactory pmFactory, Logger logger,
       EmailSchedulingCalculator emailSchedulingCalculator, DebugHelper debugHelper,
-      Provider<DataAccess> dataAccessProvider, MailUtil mailUtil) {
+      Provider<DataAccess> dataAccessProvider, MailUtil mailUtil, EmailyConfig config) {
     this.hostingProvider = hostingProvider;
     this.reqProvider = reqProvider;
     this.pmFactory = pmFactory;
@@ -102,6 +107,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     this.debugHelper = debugHelper;
     this.dataAccessProvider = dataAccessProvider;
     this.mailUtil = mailUtil;
+    this.config = config;
   }
 
   /**
@@ -109,7 +115,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    */
   @Override
   public void processEvents(RobotMessageBundle bundle) {
-    // New behavior:
+    updateWaveletIdForEmail(bundle);
     String proxyingFor = getProxyingFor();
     if (!proxyingFor.isEmpty()) {
       String email = hostingProvider.getEmailAddressFromRobotProxyFor(proxyingFor);
@@ -117,7 +123,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     } else {
       handleRobotEvents(bundle);
     }
-    processIncomingEmails(bundle.getWavelet());
+    processIncomingEmails(bundle);
   }
 
   private void handleRobotEvents(RobotMessageBundle bundle) {
@@ -342,40 +348,49 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   }
 
   /**
-   * Processes the incoming emails accumulated so far: creates one new wave per email.
+   * Updates the wavelet ID reference for the email representing this wavelet.
+   * 
+   * @param bundle The Wave events to process.
+   */
+  private void updateWaveletIdForEmail(RobotMessageBundle bundle) {
+    final Wavelet wavelet = bundle.getWavelet();
+    if (!wavelet.hasDataDocument("Message-ID"))
+      return;
+    PersistenceManager pm = pmFactory.getPersistenceManager();
+    Transaction tx = pm.currentTransaction();
+    tx.begin();
+    String messageId = wavelet.getDataDocument("Message-ID");
+    logger.info("Wavelet links to Message-ID: " + messageId);
+    try {
+      PersistentEmail email = (PersistentEmail) pm.getObjectById(PersistentEmail.class, messageId);
+      if (email.getWaveletId() == null) {
+        // Attach the Wavelet ID to the email.
+        email.setWaveAndWaveletId(wavelet.getWaveId(), wavelet.getWaveletId());
+
+      } else {
+        if (!email.getWaveletId().equals(wavelet.getWaveletId())) {
+          logger.warning("Wavelet ID mismatch for email with message ID " + messageId);
+          logger.warning("Expecting Wavelet ID " + wavelet.getWaveletId()
+              + " but email has Wavelet ID " + email.getWaveletId());
+        }
+      }
+    } catch (JDOObjectNotFoundException onf) {
+      onf.printStackTrace();
+    }
+    tx.commit();
+  }
+
+  /**
+   * Processes the incoming emails accumulated so far.
    * 
    * TODO(taton) When an email has many wave recipients, this currently duplicates the Wave.
    * 
-   * @param wavelet Handle to create new waves.
+   * @param bundle The Wave events to process.
    */
-  private void processIncomingEmails(Wavelet wavelet) {
-    PersistenceManager pm = pmFactory.getPersistenceManager();
-    Transaction tx = pm.currentTransaction();
-
-    if (wavelet.hasDataDocument("Message-ID")) {
-      tx.begin();
-      String messageId = wavelet.getDataDocument("Message-ID");
-      logger.info("Wavelet links to Message-ID: " + messageId);
-      try {
-        PersistentEmail email = (PersistentEmail) pm
-            .getObjectById(PersistentEmail.class, messageId);
-        if (email.getWaveletId() == null) {
-          // Attach the Wavelet ID to the email.
-          email.setWaveletId(wavelet.getWaveletId());
-
-        } else {
-          if (!email.getWaveletId().equals(wavelet.getWaveletId())) {
-            logger.warning("Wavelet ID mismatch for email with message ID " + messageId);
-            logger.warning("Expecting Wavelet ID " + wavelet.getWaveletId()
-                + " but email has Wavelet ID " + email.getWaveletId());
-          }
-        }
-      } catch (JDOObjectNotFoundException onf) {
-        onf.printStackTrace();
-      }
-      tx.commit();
-    }
-
+  private void processIncomingEmails(RobotMessageBundle bundle) {
+    final Wavelet wavelet = bundle.getWavelet();
+    final PersistenceManager pm = pmFactory.getPersistenceManager();
+    final Transaction tx = pm.currentTransaction();
     try {
       // Retrieve the IDs of the incoming messages to process.
       Query query = pm.newQuery(EmailToProcess.class);
@@ -391,12 +406,17 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
         rawMap.put(email.getMessageId(), email);
       }
 
+      // List of the emails that are successfully processed.
+      List<EmailToProcess> processed = new ArrayList<EmailToProcess>();
+
       @SuppressWarnings( { "unchecked" })
       Collection<PersistentEmail> emails = pm.getObjectsById(ids);
       for (PersistentEmail email : emails) {
+        EmailToProcess raw = rawMap.get(email.getMessageId());
         try {
           tx.begin();
-          createWaveFromMessage(wavelet, rawMap.get(email.getMessageId()), email);
+          if (processIncomingEmail(bundle, pm, raw, email))
+            processed.add(raw);
           tx.commit();
         } catch (Exception exn) {
           exn.printStackTrace();
@@ -406,9 +426,9 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
         }
       } // For loop
 
-      // Purge the EmailToProcess objects.
+      // Purge the EmailToProcess objects that have been successfully processed.
       tx.begin();
-      pm.deletePersistentAll(emailsToProcess);
+      pm.deletePersistentAll(processed);
       tx.commit();
 
     } finally {
@@ -417,21 +437,84 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   }
 
   /**
-   * Creates the Wave representing an email.
+   * Processes one incoming email. Appends a new blip to the existing Wavelet if one exists already
+   * for the thread the email belongs to, otherwise creates a new Wavelet.
    * 
-   * @param wavelet Handle to create new Waves.
-   * @param raw The raw unprocessed email to process.
-   * @param message The incoming email to create the wave of.
+   * @param bundle
+   * @param pm
+   * @param raw
+   * @param email
+   * @returns True if the email has been successfully processed, false otherwise.
    */
-  private void createWaveFromMessage(Wavelet wavelet, EmailToProcess raw, PersistentEmail email)
-      throws MimeIOException, IOException {
+  private boolean processIncomingEmail(RobotMessageBundle bundle, PersistenceManager pm,
+      EmailToProcess raw, PersistentEmail email) throws MimeIOException, IOException {
+
+    // Find the wavelet representing the thread, null if none.
+    Wavelet threadWavelet = null;
+    if (email.getReferences() != null) {
+      // Look for a Wavelet ID in the message references.
+      Set<StringIdentity> refIds = new HashSet<StringIdentity>();
+      for (String refId : email.getReferences())
+        refIds.add(new StringIdentity(PersistentEmail.class, refId));
+      @SuppressWarnings( { "unchecked" })
+      Collection<PersistentEmail> references = pm.getObjectsById(refIds);
+      // We pick the first reference we find.
+      for (PersistentEmail reference : references) {
+        if (reference.getWaveletId() == null)
+          continue;
+        if (!reference.getWaveletId().isEmpty()) {
+          threadWavelet = bundle.getWavelet(reference.getWaveId(), reference.getWaveletId());
+          break;
+        }
+      }
+
+      if ((threadWavelet == null) && !references.isEmpty()) {
+        // This email belongs to a thread, has references, but we could not look the corresponding
+        // wavelet ID up in the referenced emails.
+        // Postpone the processing a bit, until the references are processed and associated to a
+        // Wavelet ID.
+        long processingDate = Calendar.getInstance().getTimeInMillis();
+        if (raw.getProcessingDate() == null)
+          raw.setProcessingDate(processingDate);
+        else
+          processingDate = raw.getProcessingDate();
+
+        // If the processing delay gets too long, we give up and create a new wave.
+        long processingDelay = Calendar.getInstance().getTimeInMillis() - processingDate;
+        if (processingDelay < config.getLong(PROCESS_EMAIL_MAX_DELAY) * 1000)
+          return false;
+      }
+    }
+
     Message message = new Message(raw.getInputStream(), mimeEntityConfig);
-    List<String> participants = new ArrayList<String>();
-    participants.addAll(email.getWaveParticipants());
-    Wavelet newWavelet = wavelet.createWavelet(participants, null);
-    newWavelet.setTitle(message.getSubject());
-    newWavelet.setDataDocument("Message-ID", email.getMessageId());
-    Blip blip = newWavelet.getRootBlip();
+    // Create the blip that will contain the email content.
+    Blip emailBlip = null;
+    if (threadWavelet == null) {
+      // We could not link this message to an existing Wavelet:
+      // create a new Wavelet and write message to the root blip.
+      List<String> participants = new ArrayList<String>();
+      participants.addAll(email.getWaveParticipants());
+      Wavelet newWavelet = bundle.getWavelet().createWavelet(participants, null);
+      newWavelet.setTitle(message.getSubject());
+      newWavelet.setDataDocument("Message-ID", email.getMessageId());
+      emailBlip = newWavelet.getRootBlip();
+    } else {
+      // There is a Wavelet for this thread: append message to a new blip.
+      email.setWaveAndWaveletId(threadWavelet.getWaveId(), threadWavelet.getWaveletId());
+      emailBlip = threadWavelet.appendBlip();
+    }
+
+    writeMessageToBlip(message, emailBlip);
+    return true;
+  }
+
+  /**
+   * Formats an email into a Blip.
+   * 
+   * @param message The incoming email to format.
+   * @param blip The blip to write into.
+   */
+  private void writeMessageToBlip(Message message, Blip blip) throws MimeIOException, IOException {
     TextView textView = blip.getDocument();
     String author = null;
     if (message.getFrom() != null) {
