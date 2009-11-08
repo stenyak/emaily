@@ -21,6 +21,11 @@ package com.google.wave.extensions.emaily.config;
  */
 public interface HostingProvider {
   /**
+   * @return The Wave ID for the robot itself.
+   */
+  public String getRobotWaveId();
+
+  /**
    * Returns an email address of a wave participant in the Emaily domain. This
    * is used as an outgoing email address and this email address can receive
    * emails from the outside.
