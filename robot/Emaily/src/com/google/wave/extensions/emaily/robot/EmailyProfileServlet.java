@@ -14,6 +14,8 @@
  */
 package com.google.wave.extensions.emaily.robot;
 
+import java.util.logging.Logger;
+
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.wave.api.ParticipantProfile;
@@ -39,11 +41,13 @@ public class EmailyProfileServlet extends ProfileServlet {
   // Injected dependencies
   private final EmailyConfig emailyConfig;
   private final HostingProvider hostingProvider;
+  private final Logger logger;
 
   @Inject
-  public EmailyProfileServlet(EmailyConfig emailyConfig, HostingProvider hostingProvider) {
+  public EmailyProfileServlet(EmailyConfig emailyConfig, HostingProvider hostingProvider, Logger logger) {
     this.emailyConfig = emailyConfig;
     this.hostingProvider = hostingProvider;
+    this.logger = logger;
     emailyConfig.checkRequiredProperties(requiredProperties);
   }
 
@@ -61,7 +65,10 @@ public class EmailyProfileServlet extends ProfileServlet {
 
   @Override
   public ParticipantProfile getCustomProfile(String proxyingFor) {
+    // Workaround for buggy API.
+    proxyingFor = proxyingFor.replaceAll(" ", "+");
     String email = hostingProvider.getEmailAddressFromRobotProxyFor(proxyingFor);
+    logger.fine("Profile queried: " + proxyingFor + ", email: " + email);
     return new ParticipantProfile(email + " (" + getRobotName() + ")", getRobotAvatarUrl(),
         getRobotProfilePageUrl());
   }

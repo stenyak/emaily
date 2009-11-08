@@ -1,7 +1,8 @@
 #!/bin/sh
 current_rev=`hg parent --debug | head -n 1 | cut -d ':' -f 3`
 echo "Current rev: $current_rev"
-echo "Branch:      `hg branch`"
+branch=`hg branch`
+echo "Branch:      $branch"
 echo "Unsubmitted changes:"
 hg status
 /bin/echo -n "Press ENTER if the above are OK... "
@@ -11,6 +12,7 @@ read base_rev
 /bin/echo -n "Describe the change in 1 line: "
 read change
 description="$change
+Branch: $branch
 Base rev: $base_rev
 Patch 1 rev: $current_rev"
 rietveld_upload.py \
