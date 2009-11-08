@@ -1,4 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?><Module><ModulePrefs title="Wave Emaily Target Selection Gadget"><Require feature="wave" /><Require feature="dynamic-height"/><Require feature="locked-domain"/></ModulePrefs>
+<?xml version="1.0" encoding="UTF-8"?>
+<Module>
+<ModulePrefs title="Wave Emaily Target Selection Gadget">
+  <Require feature="wave" />
+  <Require feature="dynamic-height"/>
+  <Require feature="locked-domain"/>
+</ModulePrefs>
 <Content type="html"><![CDATA[
 <form action="#" onSubmit="return formSubmitted()">
 <input type="text" name="email" value="" id="email_input">
@@ -7,6 +13,9 @@
 
 <script>
 
+// The gadget state contains keys prefixed with "email:". These are email addresses which are
+// added by the gadget. At some point, the robot should remove these keys, but this functionality
+// is not working right now, so all added keys are currently preserved. 
 var EMAIL_KEY_PREFIX = "email:";
 
 var submitObj = document.getElementById('submit');
@@ -23,7 +32,7 @@ function stateUpdated() {
   return;
   // TODO(dlux): The following code does not work, due to Java API bug: it does not allow removing
   // gadget state keys from a robot. Once it is working, we can use this code.
-  var addInProgress=false;
+  var addInProgress = false;
   var state = wave.getState();
   if (!state) return;  // Sometimes this function is called too early.
   var keys = state.getKeys();
