@@ -16,7 +16,6 @@ package com.google.wave.extensions.emaily.robot;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +44,6 @@ import com.google.wave.api.Blip;
 import com.google.wave.api.Event;
 import com.google.wave.api.EventType;
 import com.google.wave.api.Gadget;
-import com.google.wave.api.ParticipantProfile;
 import com.google.wave.api.RobotMessageBundle;
 import com.google.wave.api.StyleType;
 import com.google.wave.api.StyledText;
@@ -147,6 +145,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
         continue;
       String emailAddress = key.substring(emailGadgetPrefix.length());
       logger.info("User added email address: " + emailAddress);
+      gadget.deleteField(key);
       String newParticipant;
       try {
         newParticipant = hostingProvider.getRobotProxyForFromEmailAddress(emailAddress);
@@ -156,7 +155,6 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
             + ex.toString());
         continue;
       }
-      gadget.deleteField(key);
       if (waveletParticipants.contains(newParticipant))
         continue;
       bundle.getWavelet().addParticipant(newParticipant);
@@ -315,8 +313,9 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
 
   /**
    * Handle when the robot is added as a participant. An introduction blip is added to the wave if
-   * robot is added as a participant without sub address, i.e., adding emaily-wave@appspot.com will
-   * trigger a blip, but emaily-wave+abc+xyz.com@appspot.com will not.
+   * robot is added as a participant without "proxyingFor" argument, i.e., adding
+   * emaily-wave@appspot.com will trigger a blip, but emaily-wave+abc+xyz.com@appspot.com will not.
+   * It also adds a form which makes it easy to add new email participants to the wave.
    * 
    * @param bundle RobotMessageBundle received from the Wave Server.
    */

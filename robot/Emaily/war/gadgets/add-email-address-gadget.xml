@@ -21,6 +21,8 @@ function formSubmitted() {
 function stateUpdated() {
   gadgets.window.adjustHeight();
   return;
+  // TODO(dlux): The following code does not work, due to Java API bug: it does not allow removing
+  // gadget state keys from a robot. Once it is working, we can use this code.
   var addInProgress=false;
   var state = wave.getState();
   if (!state) return;  // Sometimes this function is called too early.
