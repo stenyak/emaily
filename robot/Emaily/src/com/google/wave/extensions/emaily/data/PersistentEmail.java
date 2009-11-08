@@ -9,8 +9,6 @@ import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
-import com.google.wave.api.Wavelet;
-
 /**
  * Container for long-term email messages storage. We only keep a few elements from the incoming
  * emails.
