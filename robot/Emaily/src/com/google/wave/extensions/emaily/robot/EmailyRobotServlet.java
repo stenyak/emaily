@@ -409,8 +409,11 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       // List of the emails that are successfully processed.
       List<EmailToProcess> processed = new ArrayList<EmailToProcess>();
 
+      // Retrieve all the persistent emails referenced by EmailToProcess objects.
+      // This requires the referenced objects to exist in the data store.
       @SuppressWarnings( { "unchecked" })
-      Collection<PersistentEmail> emails = pm.getObjectsById(ids);
+      Collection<PersistentEmail> emails = pm.getObjectsById(ids, true);
+
       for (PersistentEmail email : emails) {
         EmailToProcess raw = rawMap.get(email.getMessageId());
         try {
@@ -456,8 +459,11 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       Set<StringIdentity> refIds = new HashSet<StringIdentity>();
       for (String refId : email.getReferences())
         refIds.add(new StringIdentity(PersistentEmail.class, refId));
+
+      // Retrieve all referenced messages by this email. Don't worry about non-existing references.
       @SuppressWarnings( { "unchecked" })
-      Collection<PersistentEmail> references = pm.getObjectsById(refIds);
+      Collection<PersistentEmail> references = pm.getObjectsById(refIds, false);
+
       // We pick the first reference we find.
       for (PersistentEmail reference : references) {
         if (reference.getWaveletId() == null)
