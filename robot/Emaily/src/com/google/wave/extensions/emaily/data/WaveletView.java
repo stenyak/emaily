@@ -98,7 +98,7 @@ public class WaveletView {
     return splitId(id)[0];
   }
 
-  /** @return The email recipient address this Wavelet is addressed to. */
+  /** @return The email recipient address this WaveletView is addressed to. */
   public String getEmail() {
     return splitId(id)[1];
   }
@@ -120,7 +120,7 @@ public class WaveletView {
     id = buildId(waveletId, email);
   }
 
-  /** Utility functions for the Id field. */
+  /** Builds a synthetic WaveletView ID from the Wavelet Id and email recipient address. */
   public static String buildId(String waveletId, String email) {
     return waveletId + ' ' + email;
   }
