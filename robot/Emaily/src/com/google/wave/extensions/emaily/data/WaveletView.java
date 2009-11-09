@@ -20,6 +20,7 @@ import java.util.Random;
 
 import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.IdentityType;
+import javax.jdo.annotations.Key;
 import javax.jdo.annotations.NotPersistent;
 import javax.jdo.annotations.Order;
 import javax.jdo.annotations.PersistenceCapable;
@@ -30,7 +31,6 @@ import javax.jdo.annotations.PrimaryKey;
  * Data object for a wavelet view. A wavelet view is a wavelet from an email user's perspective.
  * 
  * @author dlux
- * 
  */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class WaveletView {
@@ -38,22 +38,27 @@ public class WaveletView {
   @NotPersistent
   private static final Random randomGenerator = new Random();
 
-  // The ID of this entity consists of two things: the wavelet Id and the email
-  // address of the user, separated by a ' '.
+  /**
+   * The ID of this entity consists of two things: the wavelet Id and the email address of the user,
+   * separated by a ' '.
+   */
   @PrimaryKey
   @Persistent
   private String id;
 
-  // Fields
   @Persistent
   private long version;
 
+  /** A unique token used in group discussion only. */
+  @Key
   @Persistent
   private String emailAddressToken;
 
+  /** The title of the Wavelet. */
   @Persistent
   private String title;
 
+  /** The ID of the root blip of the Wavelet. */
   @Persistent
   private String rootBlipId;
 
@@ -70,8 +75,9 @@ public class WaveletView {
   @Persistent
   private long lastEmailSentTime;
 
+  /** nullable: null means infinity. */
   @Persistent
-  private Long timeForSending; // nullable, null means: infinity
+  private Long timeForSending;
 
   /**
    * Constructor for an empty object with the required fields and default values.
@@ -80,7 +86,6 @@ public class WaveletView {
    * @param email
    */
   public WaveletView(String waveletId, String email, String rootBlipId) {
-    this();
     this.id = buildId(waveletId, email);
     this.emailAddressToken = generateNewEmailAddressToken();
     this.unsentBlips = new ArrayList<BlipVersionView>();
@@ -88,14 +93,12 @@ public class WaveletView {
     this.rootBlipId = rootBlipId;
   }
 
-  private WaveletView() {
-  }
-
-  // Accessors for the composite primary key
+  /** @return The Wavelet ID. */
   public String getWaveletId() {
     return splitId(id)[0];
   }
 
+  /** @return The email recipient address this Wavelet is addressed to. */
   public String getEmail() {
     return splitId(id)[1];
   }
@@ -108,6 +111,7 @@ public class WaveletView {
     setId(getWaveletId(), email);
   }
 
+  /** @return The synthetic ID of the WaveletView. */
   public String getId() {
     return id;
   }
@@ -116,15 +120,24 @@ public class WaveletView {
     id = buildId(waveletId, email);
   }
 
-  // utility functions for the Id field.
+  /** Utility functions for the Id field. */
   public static String buildId(String waveletId, String email) {
     return waveletId + ' ' + email;
   }
 
+  /**
+   * Splits a synthetic WaveletView ID into its Wavelet ID and its recipient email address.
+   * 
+   * @return the Wavelet ID and the recipient email address.
+   */
   private static String[] splitId(String id) {
     return id.split(" ", 2);
   }
 
+  /**
+   * @return A new unique token to embed in the from or reply-to email address to link back to this
+   *         WaveletView.
+   */
   private static String generateNewEmailAddressToken() {
     long randomNumber = randomGenerator.nextLong();
     if (randomNumber > 0) {
@@ -135,6 +148,7 @@ public class WaveletView {
   }
 
   // Accessors for the rest of the fields
+
   public long getVersion() {
     return version;
   }
@@ -143,6 +157,7 @@ public class WaveletView {
     this.version = version;
   }
 
+  /** @return The token to use to identify group discussions. */
   public String getEmailAddressToken() {
     return emailAddressToken;
   }
@@ -168,6 +183,7 @@ public class WaveletView {
     // this.sentBlips = sentBlips;
   }
 
+  /** @return The time in milliseconds since epoch when the last email was sent. */
   public long getLastEmailSentTime() {
     return lastEmailSentTime;
   }
@@ -176,10 +192,10 @@ public class WaveletView {
     this.lastEmailSentTime = lastEmailSentTime;
   }
 
+  /** @return The time in milliseconds since epoch after which a new email is sent. */
   public long getTimeForSending() {
-    if (timeForSending == null) {
+    if (timeForSending == null)
       return Long.MAX_VALUE;
-    }
     return timeForSending;
   }
 
@@ -191,6 +207,7 @@ public class WaveletView {
     }
   }
 
+  /** @return The title of the Wavelet. */
   public String getTitle() {
     return title;
   }
@@ -199,6 +216,7 @@ public class WaveletView {
     this.title = title;
   }
 
+  /** @return The root blip ID of the Wavelet. */
   public String getRootBlipId() {
     return rootBlipId;
   }
