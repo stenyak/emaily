@@ -79,6 +79,7 @@ public class EmailSchedulerServlet extends HttpServlet {
   private void sendScheduledEmails() {
     try {
       // Time-limiting the sending.
+      logger.info("Querying sendable emails");
       long endTime = Calendar.getInstance().getTimeInMillis()
           + emailyConfig.getLong(MAX_SERVING_TIME) * 1000;
       List<?> ids = dataAccessProvider.get().getWaveletIdsToSend();
@@ -87,6 +88,7 @@ public class EmailSchedulerServlet extends HttpServlet {
           if (Calendar.getInstance().getTimeInMillis() >= endTime) {
             break;
           }
+          logger.info("WaveletView to process: " + (String) idObj);
           WaveletView waveletView = dataAccessProvider.get().getWaveletView((String) idObj);
           sender.SendScheduledEmail(waveletView);
           dataAccessProvider.get().commit();
