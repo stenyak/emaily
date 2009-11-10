@@ -30,11 +30,11 @@ import com.google.inject.Singleton;
  * Method(s) to send email.
  * 
  * @author dlux
- * 
  */
 @Singleton
 public class EmailSender {
-  public class EmailSendingException extends RuntimeException {
+  @SuppressWarnings("serial")
+  public static class EmailSendingException extends RuntimeException {
     public EmailSendingException() {
       super();
     }
@@ -51,21 +51,19 @@ public class EmailSender {
       super(cause);
     }
   }
-  /**
-   * Send simple text email.
-   * 
-   * @param from The recipient email address. Currently it is ignored and
-   *   used only as a string representation of the email address.
-   * @param recipient List of recipients.
-   * @param subject The subject of the email.
-   * @param body The body of the email.
-   */
-  public void simpleSendTextEmail(String from, String recipient,
-      String subject, String body) {
-    // Initialize JavaMail
-    Properties props = new Properties();
-    Session session = Session.getDefaultInstance(props, null);
 
+  private Properties props = new Properties();
+  private Session session = Session.getDefaultInstance(props, null);
+
+  /**
+   * Sends a simple text email.
+   * 
+   * @param from The sender email address.
+   * @param recipient The email recipient.
+   * @param subject The subject of the email.
+   * @param body The text body of the email.
+   */
+  public void simpleSendTextEmail(String from, String recipient, String subject, String body) {
     // Build message
     Message msg = new MimeMessage(session);
     try {

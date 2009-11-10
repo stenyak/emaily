@@ -16,7 +16,6 @@
 package com.google.wave.extensions.emaily.scheduler;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Calendar;
 import java.util.List;
 import java.util.logging.Logger;
