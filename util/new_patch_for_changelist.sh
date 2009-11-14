@@ -1,4 +1,5 @@
 #!/bin/sh
+hg qpop -a >/dev/null 2>&1
 current_rev=`hg parent --debug | head -n 1 | cut -d ':' -f 3`
 echo "Current rev: $current_rev"
 echo "Branch:      `hg branch`"
