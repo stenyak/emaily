@@ -34,7 +34,6 @@ import com.google.wave.extensions.emaily.util.StrUtil;
 
 /**
  * @author dlux
- * 
  */
 @Singleton
 public class ScheduledEmailSender {

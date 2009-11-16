@@ -71,8 +71,7 @@ public class AppspotHostingProvider implements HostingProvider {
 
   @Override
   public String getRobotWaveId() {
-    String appId = isProductionVersion() ? appName : appVersion + ".latest." + appName;
-    return appId + "@appspot.com";
+    return getAppId() + "@appspot.com";
   }
 
   @Override
@@ -147,7 +146,11 @@ public class AppspotHostingProvider implements HostingProvider {
 
   @Override
   public String getRobotURL() {
-    // TODO(dlux): add "x.latest" handling.
-    return "http://" + appName + ".appspot.com/";
+    return "http://" + getAppId() + ".appspot.com/";
+  }
+
+  /** @return The AppEngine application ID. */
+  private String getAppId() {
+    return isProductionVersion() ? appName : appVersion + ".latest." + appName;
   }
 }
