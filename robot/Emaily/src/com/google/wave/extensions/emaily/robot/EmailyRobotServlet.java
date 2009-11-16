@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.jdo.JDOObjectNotFoundException;
@@ -162,8 +163,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
         newParticipant = hostingProvider.getRobotProxyForFromEmailAddress(emailAddress);
       } catch (IllegalArgumentException ex) {
         // If it is not a valid email address, then we don't add it.
-        logger.warning("Invalid user input for email address: " + emailAddress + "\n"
-            + ex.toString());
+        logger.log(Level.WARNING, "Invalid user input for email address: " + emailAddress + "\n",
+            ex);
         continue;
       }
       if (waveletParticipants.contains(newParticipant))
@@ -375,7 +376,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
         }
       }
     } catch (JDOObjectNotFoundException onf) {
-      onf.printStackTrace();
+      logger.log(Level.WARNING, "Cannot retrieve PersistentObject", onf);
     }
     tx.commit();
   }
@@ -422,7 +423,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
             processed.add(raw);
           tx.commit();
         } catch (Exception exn) {
-          exn.printStackTrace();
+          logger.log(Level.WARNING, "Error during processing incoming email", exn);
         } finally {
           if (tx.isActive())
             tx.rollback();
@@ -456,25 +457,25 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     Wavelet threadWavelet = null;
     if (email.getReferences() != null) {
       // Look for a Wavelet ID in the message references.
-      Set<StringIdentity> refIds = new HashSet<StringIdentity>();
-      for (String refId : email.getReferences())
-        refIds.add(new StringIdentity(PersistentEmail.class, refId));
-
-      // Retrieve all referenced messages by this email. Don't worry about non-existing references.
-      @SuppressWarnings( { "unchecked" })
-      Collection<PersistentEmail> references = pm.getObjectsById(refIds, false);
-
       // We pick the first reference we find.
-      for (PersistentEmail reference : references) {
-        if (reference.getWaveletId() == null)
-          continue;
-        if (!reference.getWaveletId().isEmpty()) {
-          threadWavelet = bundle.getWavelet(reference.getWaveId(), reference.getWaveletId());
-          break;
+      for (String refId : email.getReferences()) {
+        try {
+          // Retrieve the referenced message. Don't worry about non-existing references.
+          PersistentEmail reference = (PersistentEmail) pm.getObjectById(refId);
+          if (reference.getWaveletId() == null)
+            continue;
+          if (!reference.getWaveletId().isEmpty()) {
+            threadWavelet = bundle.getWavelet(reference.getWaveId(), reference.getWaveletId());
+            break;
+          }
+        } catch (JDOObjectNotFoundException nonfe) {
+          // This just means we don't know this message ID.
+          logger.log(Level.FINER, "Unknown email message ID: " + refId);
         }
+
       }
 
-      if ((threadWavelet == null) && !references.isEmpty()) {
+      if ((threadWavelet == null) && !email.getReferences().isEmpty()) {
         // This email belongs to a thread, has references, but we could not look the corresponding
         // wavelet ID up in the referenced emails.
         // Postpone the processing a bit, until the references are processed and associated to a
