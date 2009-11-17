@@ -55,8 +55,8 @@ public class JDODataAccess implements DataAccess {
     }
   }
 
-  public WaveletView getWaveletView(String waveletId, String email) {
-    return getWaveletView(WaveletView.buildId(waveletId, email));
+  public WaveletView getWaveletView(String waveId, String waveletId, String email) {
+    return getWaveletView(WaveletView.buildId(waveId, waveletId, email));
   }
 
   @Override

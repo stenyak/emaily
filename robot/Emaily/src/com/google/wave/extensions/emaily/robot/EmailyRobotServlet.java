@@ -47,9 +47,6 @@ import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.wave.api.AbstractRobotServlet;
 import com.google.wave.api.Blip;
-import com.google.wave.api.Event;
-import com.google.wave.api.EventType;
-import com.google.wave.api.Gadget;
 import com.google.wave.api.RobotMessageBundle;
 import com.google.wave.api.StyleType;
 import com.google.wave.api.StyledText;
@@ -57,14 +54,9 @@ import com.google.wave.api.TextView;
 import com.google.wave.api.Wavelet;
 import com.google.wave.extensions.emaily.config.EmailyConfig;
 import com.google.wave.extensions.emaily.config.HostingProvider;
-import com.google.wave.extensions.emaily.data.BlipVersionView;
-import com.google.wave.extensions.emaily.data.DataAccess;
 import com.google.wave.extensions.emaily.data.EmailToProcess;
 import com.google.wave.extensions.emaily.data.PersistentEmail;
-import com.google.wave.extensions.emaily.data.WaveletView;
 import com.google.wave.extensions.emaily.email.MailUtil;
-import com.google.wave.extensions.emaily.scheduler.EmailSchedulingCalculator;
-import com.google.wave.extensions.emaily.util.DebugHelper;
 
 /**
  * Servlet for serving the Wave robot requests.
@@ -83,32 +75,27 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private final Provider<HttpServletRequest> reqProvider;
   private final PersistenceManagerFactory pmFactory;
   private final Logger logger;
-  private final EmailSchedulingCalculator emailSchedulingCalculator;
-  private final DebugHelper debugHelper;
-  private final Provider<DataAccess> dataAccessProvider;
   private final MailUtil mailUtil;
   private final EmailyConfig config;
-
-  private static final String introText = "Emaily helps you sending emails from wave.\n"
-      + "Type an email address below, and click 'Add' to add it as an email recipient.\n";
-  private static final String emailGadgetPrefix = "email:";
+  private final EmailUserProxyEventHandler emailUserProxyEventHandler;
 
   private MimeEntityConfig mimeEntityConfig = new MimeEntityConfig();
+
+  private final RobotNoProxyEventHandler robotNoProxyEventHandler;
 
   @Inject
   public EmailyRobotServlet(HostingProvider hostingProvider,
       Provider<HttpServletRequest> reqProvider, PersistenceManagerFactory pmFactory, Logger logger,
-      EmailSchedulingCalculator emailSchedulingCalculator, DebugHelper debugHelper,
-      Provider<DataAccess> dataAccessProvider, MailUtil mailUtil, EmailyConfig config) {
+      MailUtil mailUtil, EmailyConfig config, EmailUserProxyEventHandler emailUserProxyEventHandler,
+      RobotNoProxyEventHandler robotNoProxyEventHandler) {
     this.hostingProvider = hostingProvider;
     this.reqProvider = reqProvider;
     this.pmFactory = pmFactory;
     this.logger = logger;
-    this.emailSchedulingCalculator = emailSchedulingCalculator;
-    this.debugHelper = debugHelper;
-    this.dataAccessProvider = dataAccessProvider;
     this.mailUtil = mailUtil;
     this.config = config;
+    this.emailUserProxyEventHandler = emailUserProxyEventHandler;
+    this.robotNoProxyEventHandler = robotNoProxyEventHandler;
   }
 
   /**
@@ -120,187 +107,11 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     String proxyingFor = getProxyingFor();
     if (!proxyingFor.isEmpty()) {
       String email = hostingProvider.getEmailAddressFromRobotProxyFor(proxyingFor);
-      processWaveletViewModifications(bundle, email);
+      emailUserProxyEventHandler.processEvents(bundle, email);
     } else {
-      handleRobotEvents(bundle);
+      robotNoProxyEventHandler.processEvents(bundle);
     }
     processIncomingEmails(bundle);
-  }
-
-  private void handleRobotEvents(RobotMessageBundle bundle) {
-    // Process the events
-    for (Event e : bundle.getEvents()) {
-      processRobotBlipEvent(bundle, e);
-    }
-  }
-
-  private void processRobotBlipEvent(RobotMessageBundle bundle, Event e) {
-    switch (e.getType()) {
-    case WAVELET_SELF_ADDED:
-      handleRobotAdded(bundle);
-      break;
-    case BLIP_VERSION_CHANGED:
-      handleBlipChanged(bundle, e);
-      break;
-    }
-  }
-
-  private void handleBlipChanged(RobotMessageBundle bundle, Event e) {
-    Blip blip = e.getBlip();
-    Gadget gadget = blip.getDocument().getGadgetView().getGadget(getAddEmailAddressGadgetUrl());
-    if (gadget == null)
-      return;
-    Map<String, String> properties = gadget.getProperties();
-    HashSet<String> waveletParticipants = new HashSet<String>(bundle.getWavelet().getParticipants());
-    for (String key : new HashSet<String>(properties.keySet())) {
-      if (!key.startsWith(emailGadgetPrefix))
-        continue;
-      String emailAddress = key.substring(emailGadgetPrefix.length());
-      logger.info("User added email address: " + emailAddress);
-      gadget.deleteField(key);
-      String newParticipant;
-      try {
-        newParticipant = hostingProvider.getRobotProxyForFromEmailAddress(emailAddress);
-      } catch (IllegalArgumentException ex) {
-        // If it is not a valid email address, then we don't add it.
-        logger.log(Level.WARNING, "Invalid user input for email address: " + emailAddress + "\n",
-            ex);
-        continue;
-      }
-      if (waveletParticipants.contains(newParticipant))
-        continue;
-      bundle.getWavelet().addParticipant(newParticipant);
-    }
-  }
-
-  /**
-   * Process modifications for the wavelet changes and schedule sending.
-   * 
-   * @param bundle The robot message bundle.
-   * @param email The email of the user.
-   */
-  private void processWaveletViewModifications(RobotMessageBundle bundle, String email) {
-    try {
-      String waveletId = bundle.getWavelet().getWaveletId();
-
-      // Get or create the WaveletView for the wavelet and the current user.
-      WaveletView waveletView = dataAccessProvider.get().getWaveletView(waveletId, email);
-      if (waveletView == null) {
-        waveletView = new WaveletView(waveletId, email, bundle.getWavelet().getRootBlipId());
-        dataAccessProvider.get().persistWaveletView(waveletView);
-      }
-
-      updateWaveletView(waveletView, bundle);
-
-      // Process the blip events
-      for (Event e : bundle.getEvents()) {
-        processBlipEvent(waveletView, e);
-      }
-
-      // Calculate the next send time
-      emailSchedulingCalculator.calculateWaveletViewNextSendTime(waveletView);
-
-      // Prints the debug info
-      logger.info(debugHelper.printWaveletViewInfo(waveletView));
-      dataAccessProvider.get().commit();
-    } finally {
-      dataAccessProvider.get().close();
-    }
-  }
-
-  /**
-   * Updates the wavelet view from the information received by the robot. Currently it just updates
-   * the title.
-   * 
-   * @param waveletView The wavelet view to update.
-   * @param bundle The message bundle received by the robot.
-   */
-  private void updateWaveletView(WaveletView waveletView, RobotMessageBundle bundle) {
-    waveletView.setTitle(bundle.getWavelet().getTitle());
-  }
-
-  /**
-   * Process one blip-related event.
-   * 
-   * @param waveletView The wavelet view data object of the current event.
-   * @param e The wave event.
-   */
-  private void processBlipEvent(WaveletView waveletView, Event e) {
-    logger.finer("Started processing blip events");
-    Blip blip = e.getBlip();
-    if (blip == null) {
-      logger.fine("Not blip event, returning");
-      return;
-    }
-
-    // If the robot is a contributor, then we don't process the blip:
-    if (blip.getContributors().contains(hostingProvider.getRobotWaveId()))
-      return;
-
-    // Extract the content
-    logger.finer("Extracting content");
-    String blipContent = blip.getDocument().getText();
-    if (blip.getBlipId().equals(waveletView.getRootBlipId())) {
-      // Remove the Wave Title from the root blip content.
-      blipContent = blipContent.substring(waveletView.getTitle().length()).trim();
-    }
-
-    String waveProxyIdOfUser = hostingProvider.getRobotProxyForFromEmailAddress(waveletView
-        .getEmail());
-    if (waveProxyIdOfUser.equals(blip.getCreator())) {
-      logger.fine("The blip is sent by the user itself, won't create a new blip from it");
-      return;
-    }
-
-    // find the corresponding blip in the unsent ones
-    logger.finer("find the blip if it was already in the unsent list");
-    BlipVersionView blipVersionView = null;
-    for (BlipVersionView b : waveletView.getUnsentBlips()) {
-      if (blip.getBlipId().equals(b.getBlipId())) {
-        blipVersionView = b;
-        break;
-      }
-    }
-
-    // If it did not exist yet, create one:
-    logger.finer("create one if not exist yet");
-    if (blipVersionView == null) {
-      if (blipContent.isEmpty()) {
-        logger.fine("The blip content is empty, we don't create a new blip");
-        return;
-      }
-      if (e.getType() == EventType.BLIP_SUBMITTED) {
-        logger.fine("Blip submitted without edit: don't create a new version of it");
-        return;
-      }
-      // Otherwise, create a new BlipVersionWiew
-      blipVersionView = new BlipVersionView(waveletView, blip.getBlipId());
-      waveletView.getUnsentBlips().add(blipVersionView);
-    }
-    // Update the blip version to the latest
-    blipVersionView.setVersion(blip.getVersion());
-
-    blipVersionView.setParticipants(blip.getContributors());
-
-    boolean still_editing = false;
-    switch (e.getType()) {
-    case BLIP_DELETED:
-      blipVersionView.setContent("");
-      break;
-    case BLIP_SUBMITTED:
-      break;
-    default:
-      still_editing = true;
-      break;
-    }
-
-    if (still_editing && blipContent.equals(blipVersionView.getContent())) {
-      // We don't change any timestamp if the content is not changed.
-      return;
-    }
-    blipVersionView.setContent(blipContent);
-
-    emailSchedulingCalculator.updateBlipViewTimestamps(blipVersionView, still_editing);
   }
 
   /**
@@ -321,31 +132,6 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     } else {
       return "";
     }
-  }
-
-  /**
-   * Handle when the robot is added as a participant. An introduction blip is added to the wave if
-   * robot is added as a participant without "proxyingFor" argument, i.e., adding
-   * emaily-wave@appspot.com will trigger a blip, but emaily-wave+abc+xyz.com@appspot.com will not.
-   * It also adds a form which makes it easy to add new email participants to the wave.
-   * 
-   * @param bundle RobotMessageBundle received from the Wave Server.
-   */
-  private void handleRobotAdded(RobotMessageBundle bundle) {
-    logger.info("Robot added to participants");
-    // bundle.getWavelet().appendBlip().getDocument().append(introText) will
-    // display the text twice due to
-    // http://code.google.com/p/google-wave-resources/issues/detail?id=354
-    // TODO(karan) Change this once the above Wave API issue is fixed.
-
-    Blip newBlip = bundle.getWavelet().appendBlip();
-    newBlip.getDocument().delete();
-    newBlip.getDocument().append(introText);
-    newBlip.getDocument().appendElement(new Gadget(getAddEmailAddressGadgetUrl()));
-  }
-
-  private String getAddEmailAddressGadgetUrl() {
-    return hostingProvider.getRobotURL() + "gadgets/add-email-address-gadget.xml";
   }
 
   /**
@@ -389,7 +175,6 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * @param bundle The Wave events to process.
    */
   private void processIncomingEmails(RobotMessageBundle bundle) {
-    final Wavelet wavelet = bundle.getWavelet();
     final PersistenceManager pm = pmFactory.getPersistenceManager();
     final Transaction tx = pm.currentTransaction();
     try {

@@ -55,7 +55,7 @@ public class EventImpl implements Event {
     return getProperty("title");
   }
 
-  private String getProperty(String property) {
+  public String getProperty(String property) {
     return (String) eventData.getProperties().get(property);
   }
 

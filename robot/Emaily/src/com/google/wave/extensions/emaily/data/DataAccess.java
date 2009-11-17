@@ -35,11 +35,12 @@ public interface DataAccess {
   /**
    * Returns an existing WaveletView from the database (detached).
    * 
+   * @param waveId The wave Id
    * @param waveletId The wavelet Id
    * @param email The email of the user
    * @return The existing WaveletView, or <code>null</code> if it does not exist.
    */
-  public WaveletView getWaveletView(String waveletId, String email);
+  public WaveletView getWaveletView(String waveId, String waveletId, String email);
 
   /**
    * Persists a given waveletView. Call this only for non-persisted objects. After persisting, the

@@ -15,6 +15,7 @@
 package com.google.wave.extensions.emaily.data;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -85,8 +86,8 @@ public class WaveletView {
    * @param waveletId
    * @param email
    */
-  public WaveletView(String waveletId, String email, String rootBlipId) {
-    this.id = buildId(waveletId, email);
+  public WaveletView(String waveId, String waveletId, String email, String rootBlipId) {
+    this.id = buildId(waveId, waveletId, email);
     this.emailAddressToken = generateNewEmailAddressToken();
     this.unsentBlips = new ArrayList<BlipVersionView>();
     // this.sentBlips = new ArrayList<BlipVersionView>();
@@ -95,20 +96,12 @@ public class WaveletView {
 
   /** @return The Wavelet ID. */
   public String getWaveletId() {
-    return splitId(id)[0];
+    return splitId(id)[1];
   }
 
   /** @return The email recipient address this WaveletView is addressed to. */
   public String getEmail() {
-    return splitId(id)[1];
-  }
-
-  public void setWaveletId(String waveletId) {
-    setId(waveletId, getEmail());
-  }
-
-  public void setEmail(String email) {
-    setId(getWaveletId(), email);
+    return splitId(id)[2];
   }
 
   /** @return The synthetic ID of the WaveletView. */
@@ -116,22 +109,30 @@ public class WaveletView {
     return id;
   }
 
-  private void setId(String waveletId, String email) {
-    id = buildId(waveletId, email);
-  }
-
   /** Builds a synthetic WaveletView ID from the Wavelet Id and email recipient address. */
-  public static String buildId(String waveletId, String email) {
-    return waveletId + ' ' + email;
+  public static String buildId(String waveId, String waveletId, String email) {
+    return waveId + ' ' + waveletId + ' ' + email;
   }
 
   /**
    * Splits a synthetic WaveletView ID into its Wavelet ID and its recipient email address.
    * 
-   * @return the Wavelet ID and the recipient email address.
+   * @return the Wave ID, Wavelet ID and the recipient email address.
    */
   private static String[] splitId(String id) {
-    return id.split(" ", 2);
+    String[] idArray = id.split(" ", 3);
+    // Newest key format:
+    if (idArray.length == 3) return idArray;
+    // Without waveId (temporary support):
+    if (idArray.length == 2) {
+      String[] newIdArray = new String[3];
+      newIdArray[0] = "";
+      newIdArray[1] = idArray[0];
+      newIdArray[2] = idArray[1];
+      return newIdArray;
+    }
+    // Invalid id:
+    throw new IllegalArgumentException("Invalid key");
   }
 
   /**
