@@ -181,12 +181,13 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    */
   private void processWaveletViewModifications(RobotMessageBundle bundle, String email) {
     try {
+      String waveId = bundle.getWavelet().getWaveId();
       String waveletId = bundle.getWavelet().getWaveletId();
 
       // Get or create the WaveletView for the wavelet and the current user.
-      WaveletView waveletView = dataAccessProvider.get().getWaveletView(waveletId, email);
+      WaveletView waveletView = dataAccessProvider.get().getWaveletView(waveId, waveletId, email);
       if (waveletView == null) {
-        waveletView = new WaveletView(waveletId, email, bundle.getWavelet().getRootBlipId());
+        waveletView = new WaveletView(waveId, waveletId, email, bundle.getWavelet().getRootBlipId());
         dataAccessProvider.get().persistWaveletView(waveletView);
       }
 

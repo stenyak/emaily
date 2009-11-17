@@ -15,6 +15,7 @@
 package com.google.wave.extensions.emaily.data;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -38,7 +39,7 @@ public class WaveletView {
   @NotPersistent
   private static final Random randomGenerator = new Random();
 
-  // The ID of this entity consists of two things: the wavelet Id and the email
+  // The ID of this entity consists of three things: the wave Id, the wavelet Id and the email
   // address of the user, separated by a ' '.
   @PrimaryKey
   @Persistent
@@ -79,9 +80,9 @@ public class WaveletView {
    * @param waveletId
    * @param email
    */
-  public WaveletView(String waveletId, String email, String rootBlipId) {
+  public WaveletView(String waveId, String waveletId, String email, String rootBlipId) {
     this();
-    this.id = buildId(waveletId, email);
+    this.id = buildId(waveId, waveletId, email);
     this.emailAddressToken = generateNewEmailAddressToken();
     this.unsentBlips = new ArrayList<BlipVersionView>();
     // this.sentBlips = new ArrayList<BlipVersionView>();
@@ -92,37 +93,42 @@ public class WaveletView {
   }
 
   // Accessors for the composite primary key
-  public String getWaveletId() {
+
+  public String getWaveId() {
     return splitId(id)[0];
   }
 
-  public String getEmail() {
+  public String getWaveletId() {
     return splitId(id)[1];
   }
 
-  public void setWaveletId(String waveletId) {
-    setId(waveletId, getEmail());
-  }
-
-  public void setEmail(String email) {
-    setId(getWaveletId(), email);
+  public String getEmail() {
+    return splitId(id)[2];
   }
 
   public String getId() {
     return id;
   }
 
-  private void setId(String waveletId, String email) {
-    id = buildId(waveletId, email);
-  }
-
   // utility functions for the Id field.
-  public static String buildId(String waveletId, String email) {
-    return waveletId + ' ' + email;
+  public static String buildId(String waveId, String waveletId, String email) {
+    return waveId + ' ' + waveletId + ' ' + email;
   }
 
   private static String[] splitId(String id) {
-    return id.split(" ", 2);
+    String[] idArray = id.split(" ", 3);
+    // Newest key format:
+    if (idArray.length == 3) return idArray;
+    // Without waveId (temporary support):
+    if (idArray.length == 2) {
+      String[] newIdArray = new String[3];
+      newIdArray[0] = "";
+      newIdArray[1] = idArray[0];
+      newIdArray[2] = idArray[1];
+      return newIdArray;
+    }
+    // Invalid id:
+    throw new IllegalArgumentException("Invalid key");
   }
 
   private static String generateNewEmailAddressToken() {
