@@ -110,4 +110,9 @@ public interface Event {
    * applicable).
    */
   public String getButtonName();
+  
+  /**
+   * Gets a property. Made public.
+   */
+  public String getProperty(String propertyName);
 }

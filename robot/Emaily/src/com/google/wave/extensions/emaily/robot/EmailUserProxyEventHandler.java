@@ -119,6 +119,19 @@ public class EmailUserProxyEventHandler {
       logger.fine("Not blip event, returning");
       return;
     }
+    
+    // If it is a BLIP_DELETED event, then we just remove the blip from the sendable ones,
+    // and we are done.
+    if (e.getType() == EventType.BLIP_DELETED) {
+      logger.fine("Blip deleted. Finding the blip and deleting it.");
+      for (BlipVersionView b: waveletView.getUnsentBlips()) {
+        if (e.getProperty("blipId").equals(b.getBlipId())) {
+          waveletView.getUnsentBlips().remove(b);
+          break;
+        }
+      }
+      return;
+    }
 
     // If the robot is a contributor, then we don't process the blip:
     if (blip.getContributors().contains(hostingProvider.getRobotWaveId()))
@@ -169,17 +182,7 @@ public class EmailUserProxyEventHandler {
 
     blipVersionView.setParticipants(blip.getContributors());
 
-    boolean still_editing = false;
-    switch (e.getType()) {
-    case BLIP_DELETED:
-      blipVersionView.setContent("");
-      break;
-    case BLIP_SUBMITTED:
-      break;
-    default:
-      still_editing = true;
-      break;
-    }
+    boolean still_editing = e.getType() != EventType.BLIP_SUBMITTED;
 
     if (still_editing && blipContent.equals(blipVersionView.getContent())) {
       // We don't change any timestamp if the content is not changed.
