@@ -97,6 +97,10 @@ public class IncomingEmailServlet extends HttpServlet {
     }
   }
 
+  /**
+   * When BCC'ing an outgoing email to ourself, the recipient starts with this prefix concatenated
+   * with the generated email address token.
+   */
   private static final String OUTGOING_EMAIL_PREFIX = "outgoing_email+";
 
   /**
@@ -205,9 +209,10 @@ public class IncomingEmailServlet extends HttpServlet {
   }
 
   /**
-   * 
-   * @param waveletToken
-   * @param message
+   * Stores a dummy PersistentEmail to link a Wavelet with an outgoing email sent by ourselves.
+   *
+   * @param waveletToken The token identifying the WaveletView to link to.
+   * @param message The outgoing email BCC'ed to ourselves.
    */
   public void updateMessageIdForWavelet(String waveletToken, Message message) {
     Matcher matcher = markupPattern.matcher(message.getMessageId());
