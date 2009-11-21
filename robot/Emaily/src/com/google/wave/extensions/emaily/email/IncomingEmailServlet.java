@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URLDecoder;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -15,6 +16,7 @@ import java.util.regex.Pattern;
 
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
+import javax.jdo.Query;
 import javax.jdo.Transaction;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -31,6 +33,7 @@ import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.config.HostingProvider;
 import com.google.wave.extensions.emaily.data.EmailToProcess;
 import com.google.wave.extensions.emaily.data.PersistentEmail;
+import com.google.wave.extensions.emaily.data.WaveletView;
 
 /**
  * Processes incoming emails.
@@ -94,6 +97,8 @@ public class IncomingEmailServlet extends HttpServlet {
     }
   }
 
+  private static final String OUTGOING_EMAIL_PREFIX = "outgoing_email+";
+
   /**
    * Processes an HTTP request containing an incoming email.
    * 
@@ -101,8 +106,21 @@ public class IncomingEmailServlet extends HttpServlet {
    * @param input The request input stream containing the email content.
    */
   public void processIncomingRequest(String uri, InputStream input) throws IOException {
+    final byte[] content = readInputStream(input);
+    final Message message = new Message(new ByteArrayInputStream(content));
+    if (logger.isLoggable(Level.FINE)) {
+      logger.fine("Unprocessed email content:\n" + new String(content) + "\nEnd of email\n");
+    }
+
     final String mainEmailRecipient = URLDecoder.decode(uri.substring(REQUEST_URI_PREFIX.length()),
         "utf8");
+    if (mainEmailRecipient.startsWith(OUTGOING_EMAIL_PREFIX)) {
+      final String waveletToken = mainEmailRecipient.substring(OUTGOING_EMAIL_PREFIX.length())
+          .split("@")[0];
+      updateMessageIdForWavelet(waveletToken, message);
+      return;
+    }
+
     final String mainWaveRecipient = hostingProvider
         .getWaveParticipantIdFromIncomingEmailAddress(mainEmailRecipient);
     if (mainWaveRecipient == null) {
@@ -110,11 +128,6 @@ public class IncomingEmailServlet extends HttpServlet {
       return;
     }
     logger.info("Incoming message for Wave recipient: " + mainWaveRecipient);
-    final byte[] content = readInputStream(input);
-    final Message message = new Message(new ByteArrayInputStream(content));
-    if (logger.isLoggable(Level.FINE)) {
-      logger.fine("Unprocessed email content:\n" + new String(content) + "\nEnd of email\n");
-    }
 
     // Extract the references (i.e. ancestors in the thread).
     Set<String> references = null;
@@ -184,6 +197,46 @@ public class IncomingEmailServlet extends HttpServlet {
       pm.makePersistent(rawEmail);
       tx.commit();
       logger.info("Incoming email stored with ID " + pm.getObjectId(email));
+    } finally {
+      if (tx.isActive())
+        tx.rollback();
+      pm.close();
+    }
+  }
+
+  /**
+   * 
+   * @param waveletToken
+   * @param message
+   */
+  public void updateMessageIdForWavelet(String waveletToken, Message message) {
+    Matcher matcher = markupPattern.matcher(message.getMessageId());
+    if (!matcher.find()) {
+      logger.warning("Unable to parse incoming email message ID: " + message.getMessageId());
+      return;
+    }
+    final String messageId = matcher.group(1);
+
+    PersistenceManager pm = pmFactory.getPersistenceManager();
+    Transaction tx = pm.currentTransaction();
+    try {
+      Query query = pm.newQuery("select id from " + WaveletView.class.getName()
+          + " where emailAddressToken == '" + waveletToken + "'");
+      List<String> waveletViewIds = (List<String>) query.execute();
+
+      if (waveletViewIds.size() == 1) {
+        WaveletView waveletView = pm.getObjectById(WaveletView.class, waveletViewIds.get(0));
+        PersistentEmail email = new PersistentEmail(messageId, new HashSet<String>(),
+            new HashSet<String>());
+        email.setWaveAndWaveletId(waveletView.getWaveId(), waveletView.getWaveletId());
+        tx.begin();
+        pm.makePersistent(email);
+        tx.commit();
+        logger.info("Updating wavelet " + waveletView.getId() + " with Message ID " + messageId);
+      } else {
+        logger.warning("Expecting exactly one WaveletView with email address token: "
+            + waveletToken);
+      }
     } finally {
       if (tx.isActive())
         tx.rollback();

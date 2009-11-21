@@ -136,7 +136,8 @@ public class ScheduledEmailSender {
     calculator.calculateWaveletViewNextSendTime(waveletView);
 
     // Send the email
-    emailSender.simpleSendTextEmail(from, waveletView.getEmail(), subject, body.toString());
+    emailSender.sendTextEmail(from, waveletView.getEmail(), subject, body.toString(), waveletView.
+        getEmailAddressToken());
 
     // Debug info
     if (logger.isLoggable(Level.INFO)) {

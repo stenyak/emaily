@@ -14,17 +14,14 @@
  */
 package com.google.wave.extensions.emaily.email;
 
-import java.util.Properties;
+import java.io.IOException;
+import java.util.logging.Logger;
 
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMessage.RecipientType;
-
+import com.google.appengine.api.mail.MailService;
+import com.google.appengine.api.mail.MailServiceFactory;
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.wave.extensions.emaily.config.HostingProvider;
 
 /**
  * Method(s) to send email.
@@ -52,28 +49,38 @@ public class EmailSender {
     }
   }
 
-  private Properties props = new Properties();
-  private Session session = Session.getDefaultInstance(props, null);
+  // Injected dependencies
+  private final HostingProvider hostingProvider;
+  private final Logger logger;
+  private MailService mailService = MailServiceFactory.getMailService();
+
+  @Inject
+  public EmailSender(HostingProvider hostingProvider, Logger logger) {
+    this.hostingProvider = hostingProvider;
+    this.logger = logger;
+  }
 
   /**
-   * Sends a simple text email.
+   * Sends a text email.
    * 
    * @param from The sender email address.
    * @param recipient The email recipient.
    * @param subject The subject of the email.
    * @param body The text body of the email.
    */
-  public void simpleSendTextEmail(String from, String recipient, String subject, String body) {
+  public void sendTextEmail(String from, String recipient, String subject, String body,
+      String waveletToken) {
     // Build message
-    Message msg = new MimeMessage(session);
+    MailService.Message message = new MailService.Message();
+    message.setSender(from);
+    message.setTo(recipient);
+    message.setBcc(hostingProvider.getWaveletEmailAddress("outgoing_email+" + waveletToken));
+    message.setSubject(subject);
+    message.setTextBody(body);
     try {
-      msg.setFrom(new InternetAddress(from));
-      msg.addRecipient(RecipientType.TO, new InternetAddress(recipient));
-      msg.setSubject(subject);
-      msg.setText(body);
-      Transport.send(msg);
-    } catch (MessagingException e) {
-      throw new EmailSendingException("Cannot send email from: " + from + ", to:" + recipient, e);
+      mailService.send(message);
+    } catch (IOException ioe) {
+      throw new EmailSendingException("Cannot send email from: " + from + ", to:" + recipient, ioe);
     }
   }
 }

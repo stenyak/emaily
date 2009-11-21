@@ -15,7 +15,6 @@
 package com.google.wave.extensions.emaily.data;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -92,6 +91,11 @@ public class WaveletView {
     this.unsentBlips = new ArrayList<BlipVersionView>();
     // this.sentBlips = new ArrayList<BlipVersionView>();
     this.rootBlipId = rootBlipId;
+  }
+
+  /** @return The Wave ID. */
+  public String getWaveId() {
+    return splitId(id)[0];
   }
 
   /** @return The Wavelet ID. */
