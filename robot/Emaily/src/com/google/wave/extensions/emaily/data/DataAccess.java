@@ -25,30 +25,29 @@ import java.util.List;
 public interface DataAccess {
 
   /**
-   * Returns an existing WaveletView from the database.
+   * Returns an existing WaveletData from the database.
    * 
-   * @param id The wavelet view id.
-   * @return A wavelet view.
+   * @param id The wavelet data id.
+   * @return A wavelet data object.
    */
-  public WaveletView getWaveletView(String id);
+  public WaveletData getWaveletData(String id);
 
   /**
-   * Returns an existing WaveletView from the database (detached).
+   * Returns an existing WaveletData from the database.
    * 
    * @param waveId The wave Id
    * @param waveletId The wavelet Id
-   * @param email The email of the user
-   * @return The existing WaveletView, or <code>null</code> if it does not exist.
+   * @return The existing WaveletData, or <code>null</code> if it does not exist.
    */
-  public WaveletView getWaveletView(String waveId, String waveletId, String email);
+  public WaveletData getWaveletData(String waveId, String waveletId);
 
   /**
-   * Persists a given waveletView. Call this only for non-persisted objects. After persisting, the
+   * Persists a given waveletData. Call this only for non-persisted objects. After persisting, the
    * object can be modified until the end of the transation.
    * 
-   * @param waveletView Wavelet to persist.
+   * @param waveletData Wavelet data object to persist.
    */
-  public void persistWaveletView(WaveletView waveletView);
+  public void persistWaveletData(WaveletData waveletData);
 
   /**
    * Rolls back the current transaction if it was not committed, and closes it. Following operations

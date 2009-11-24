@@ -106,8 +106,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     updateWaveletIdForEmail(bundle);
     String proxyingFor = getProxyingFor();
     if (!proxyingFor.isEmpty()) {
-      String email = hostingProvider.getEmailAddressFromRobotProxyFor(proxyingFor);
-      emailUserProxyEventHandler.processEvents(bundle, email);
+      emailUserProxyEventHandler.processEvents(bundle);
     } else {
       robotNoProxyEventHandler.processEvents(bundle);
     }

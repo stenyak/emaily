@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Module>
+<ModulePrefs title="Wave Emaily Gadget" height="10">
+  <Require feature="wave" />
+  <Require feature="dynamic-height"/>
+  <Require feature="locked-domain"/>
+</ModulePrefs>
+<Content type="html" preferred_height="10"><![CDATA[
+<form action="#" onSubmit="return false;" style="margin-bottom: 0">
+<input type="submit" value="Sending..." id="send_button" onClick="sendEmail();" disabled="true">
+</form><script>
+var SEND_BUTTON_KEY="send";
+
+var sendButtonObj = document.getElementById('send_button');
+
+function sendEmail() {
+  wave.getState().submitValue(SEND_BUTTON_KEY, "1");
+}
+
+function stateUpdated() {
+  var enabled = true;
+  var text = "Send Email";
+  var state = wave.getState();
+  if (state != null) {
+    if (state.get(SEND_BUTTON_KEY) != null) {
+      enabled = false;
+    }
+  } else {
+    enabled = false;
+  }
+  if (wave.getMode() != wave.Mode.EDIT && wave.getMode() != wave.Mode.VIEW) enabled = false;
+  if (wave.getMode() == wave.Mode.DIFF_ON_OPEN) text = "Sending...";
+  sendButtonObj.disabled = !enabled;
+  sendButtonObj.value = text;
+}
+
+function init() {
+  wave.setStateCallback(stateUpdated);
+  wave.setModeCallback(stateUpdated);
+  gadgets.window.adjustHeight();
+}
+
+gadgets.util.registerOnLoadHandler(init);
+
+</script>
+]]></Content>
+</Module>

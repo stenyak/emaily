@@ -14,13 +14,16 @@
  */
 package com.google.wave.extensions.emaily.scheduler;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.config.EmailyConfig;
-import com.google.wave.extensions.emaily.data.BlipVersionView;
-import com.google.wave.extensions.emaily.data.WaveletView;
+import com.google.wave.extensions.emaily.config.HostingProvider;
+import com.google.wave.extensions.emaily.data.BlipData;
+import com.google.wave.extensions.emaily.data.WaveletData;
 
 // The idea on the basic sending schedule is the following:
 // - The bot should not send emails more frequently than 10 minutes.
@@ -35,10 +38,10 @@ import com.google.wave.extensions.emaily.data.WaveletView;
 // - If a blip content is not changed, then do not resend the blip as email.
 //
 // Required concepts for making it happen:
-// VaweletView:
+// VaweletData:
 // - LastEmailSentTime
 // - TimeForSending - calculated, stored
-// BlipVersionView:
+// BlipData:
 // - FirstEditedTimestamp
 // - LastSubmittedTimestamp
 // - LastChangedTimestamp
@@ -60,66 +63,111 @@ public class EmailSchedulingCalculator {
 
   // Injected dependencies
   private final EmailyConfig config;
+  private final HostingProvider hostingProvider;
 
   @Inject
-  public EmailSchedulingCalculator(EmailyConfig config) {
+  public EmailSchedulingCalculator(EmailyConfig config, HostingProvider hostingProvider) {
     this.config = config;
+    this.hostingProvider = hostingProvider;
     config.checkRequiredLongProperties(requiredLongProperties);
   }
 
   /**
-   * Update event times to <i>now</i> in the given blipVersionView.
+   * Update event times to <i>now</i> in the given BlipData.
    * 
-   * @param blipVersionView The blipVersionView to change.
-   * @param still_editing If a user is editing the blip or not.
+   * @param blipData The blipData to change.
+   * @param stillEditing If a user is editing the blip or not.
+   * @param manualSendRequest True, if manual send is triggered through the "Send Email" button.
    */
-  public void updateBlipViewTimestamps(BlipVersionView blipVersionView, boolean still_editing) {
+  public void updateBlipDataTimestamps(BlipData blipData, boolean stillEditing,
+      boolean manualSendRequest) {
     long time = Calendar.getInstance().getTimeInMillis();
-    if (blipVersionView.getFirstEditedTimestamp() == 0) {
-      blipVersionView.setFirstEditedTimestamp(time);
-    }
-    if (!still_editing) {
-      blipVersionView.setLastSubmittedTimestamp(time);
-    }
-    blipVersionView.setLastChangedTimestamp(time);
+    if (manualSendRequest)
+      blipData.setManualSendRequestTimestamp(time);
+    if (blipData.getFirstEditedTimestamp() == 0)
+      blipData.setFirstEditedTimestamp(time);
+    if (!stillEditing)
+      blipData.setLastSubmittedTimestamp(time);
+    blipData.setLastChangedTimestamp(time);
   }
 
   /**
    * Calculates the next send operation time of the wavelet and store it into the
    * <code>timeForSending</code> field.
    * 
-   * @param waveletView The wavelet to analyze.
+   * @param waveletData The wavelet to analyze.
    */
-  public void calculateWaveletViewNextSendTime(WaveletView waveletView) {
+  public void calculateWaveletDataNextSendTime(WaveletData waveletData) {
     long nextActionTime = Long.MAX_VALUE;
-    for (BlipVersionView blipVersionView : waveletView.getUnsentBlips()) {
-      calculateBlipTimeToBecomeSendable(blipVersionView);
-      nextActionTime = Math.min(nextActionTime, blipVersionView.getTimeToBecomeSendable());
+    for (BlipData blipData : waveletData.getUnsentBlips()) {
+      calculateBlipTimeToBecomeSendable(waveletData, blipData);
+      nextActionTime = Math.min(nextActionTime, blipData.getTimeToBecomeSendable());
     }
-    nextActionTime = Math.max(nextActionTime, waveletView.getLastEmailSentTime()
+    nextActionTime = Math.max(nextActionTime, waveletData.getLastEmailSentTime()
         + config.getLong(MIN_EMAIL_SEND_TIME) * 1000);
     // TODO(dlux): Add blip parent check (see description at the top) to decide
     // on sending a blip.
-    waveletView.setTimeForSending(nextActionTime);
+    waveletData.setTimeForSending(nextActionTime);
   }
 
   /**
-   * Calculates the next email send time for a blipVersionView.
+   * Calculates the next email send time for a BlipData and update the timeToBecomeSendable field
+   * with this value.
    * 
-   * @param b the blipVersionView to change
+   * @param b the blipData to be calculated and updated.
    */
-  private void calculateBlipTimeToBecomeSendable(BlipVersionView b) {
+  private void calculateBlipTimeToBecomeSendable(WaveletData waveletData, BlipData b) {
     long sendable;
-    if (b.getLastChangedTimestamp() > b.getLastSubmittedTimestamp()) {
-      // Someone is still editing:
-      sendable = b.getLastChangedTimestamp() + config.getLong(SEND_TIME_AFTER_BLIP_NO_EDIT) * 1000;
-    } else {
-      // Submitted by all editing parties:
-      sendable = b.getLastSubmittedTimestamp() + config.getLong(SEND_TIME_AFTER_BLIP_SUBMIT) * 1000;
+    switch (waveletData.getSendMode()) {
+    case MANUAL:
+      // Manual sending mode: we send immediately if the user pressed the "Send" button
+      // but won't send at all if he didn't.
+      if (b.getManualSendRequestTimestamp() >= b.getLastChangedTimestamp())
+        sendable = 1;
+      else
+        sendable = Long.MAX_VALUE;
+      break;
+    case AUTOMATIC:
+      if (b.getLastChangedTimestamp() > b.getLastSubmittedTimestamp()) {
+        // Someone is still editing:
+        sendable = b.getLastChangedTimestamp() + config.getLong(SEND_TIME_AFTER_BLIP_NO_EDIT)
+            * 1000;
+      } else {
+        // Submitted by all editing parties:
+        sendable = b.getLastSubmittedTimestamp() + config.getLong(SEND_TIME_AFTER_BLIP_SUBMIT)
+            * 1000;
+      }
+      // If constantly edited:
+      sendable = Math.min(sendable, b.getFirstEditedTimestamp()
+          + config.getLong(SEND_TIME_IF_CONSTANTLY_EDITED) * 1000);
+      break;
+    default:
+      throw new RuntimeException("Invalid Send Mode");
     }
-    // If constantly edited:
-    sendable = Math.min(sendable, b.getFirstEditedTimestamp()
-        + config.getLong(SEND_TIME_IF_CONSTANTLY_EDITED) * 1000);
     b.setTimeToBecomeSendable(sendable);
+  }
+
+  /**
+   * Returns a list of email recipients who are interested in the change of this blip.
+   * 
+   * The list is generated by getting all the email recipients of the wave and excluding
+   * the blip creator.
+   * 
+   * @param blipCreator the creator of the blip.
+   * @param waveParticipants Participants on the wave.
+   * @return The list of email addresses that are interested in this wave.
+   */
+  public List<String> calculateInterestedEmailRecipientsForBlip(String blipCreator,
+      List<String> waveParticipants) {
+    List<String> interestedEmailRecipiens = new ArrayList<String>();
+    for (String participant : waveParticipants) {
+      if (blipCreator.equals(participant))
+        continue;
+      String emailUser = hostingProvider.getEmailAddressFromRobotProxyForWaveId(participant);
+      if (emailUser != null) {
+        interestedEmailRecipiens.add(emailUser);
+      }
+    }
+    return interestedEmailRecipiens;
   }
 }

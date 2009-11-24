@@ -25,6 +25,7 @@ public interface HostingProvider {
    */
   public String getRobotWaveId();
 
+  // TODO(dlux): clear up the naming.
   /**
    * Returns an email address of a wave participant in the Emaily domain. This
    * is used as an outgoing email address and this email address can receive
@@ -66,7 +67,17 @@ public interface HostingProvider {
    * @throws IllegalArgumentException if the input is not valid.
    */
   public String getRobotProxyForFromEmailAddress(String address);
-  
+
+  /**
+   * Decodes a proxyingFor Wave participant id to an email address.
+   * For example:
+   * "app_id+user_id+domain.com@appspot.com" will be decoded to "user_id@domain.com".
+   * 
+   * @param address The wave recipient id, which contains an encoded email address.
+   * @return The email address, or <code>null</code> if the input was not properly formatted.
+   */
+  public String getEmailAddressFromRobotProxyForWaveId(String address);
+
   /**
    * Returns a Robot wave Id to proxy for a given email address.
    * 
@@ -85,7 +96,7 @@ public interface HostingProvider {
   /**
    * Returns a reply-to email address of a wavelet.
    * 
-   * @param emailAddressToken The generated email address token for the wavelet view.
+   * @param emailAddressToken The generated email address token for the wavelet data.
    * @return The email address which can be used as an outgoing email address, and which
    *         can be replied to.
    */
