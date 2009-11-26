@@ -1,5 +1,7 @@
 package com.google.wave.extensions.emaily.email;
 
+import static com.google.wave.extensions.emaily.email.EmailSender.OUTGOING_EMAIL_PREFIX;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -7,16 +9,15 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URLDecoder;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
-import javax.jdo.Query;
 import javax.jdo.Transaction;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -33,10 +34,9 @@ import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.config.HostingProvider;
 import com.google.wave.extensions.emaily.data.EmailToProcess;
 import com.google.wave.extensions.emaily.data.PersistentEmail;
-import com.google.wave.extensions.emaily.data.WaveletView;
 
 /**
- * Processes incoming emails.
+ * Processes incoming emails. TODO(taton) Refactor all email processing into a single class.
  * 
  * @author taton
  */
@@ -44,6 +44,7 @@ import com.google.wave.extensions.emaily.data.WaveletView;
 public class IncomingEmailServlet extends HttpServlet {
   private static final long serialVersionUID = -3570174607499608832L;
   public static final String REQUEST_URI_PREFIX = "/_ah/mail/";
+
 /** A regexp that matches fields delimited with '<' and '>'. */
   private static final Pattern markupPattern = Pattern.compile("\\s*<([^>]*)>");
 
@@ -98,12 +99,6 @@ public class IncomingEmailServlet extends HttpServlet {
   }
 
   /**
-   * When BCC'ing an outgoing email to ourself, the recipient starts with this prefix concatenated
-   * with the generated email address token.
-   */
-  private static final String OUTGOING_EMAIL_PREFIX = "outgoing_email+";
-
-  /**
    * Processes an HTTP request containing an incoming email.
    * 
    * @param uri The URI the request has been posted to.
@@ -112,23 +107,63 @@ public class IncomingEmailServlet extends HttpServlet {
   public void processIncomingRequest(String uri, InputStream input) throws IOException {
     final byte[] content = readInputStream(input);
     final Message message = new Message(new ByteArrayInputStream(content));
-    if (logger.isLoggable(Level.FINE)) {
-      logger.fine("Unprocessed email content:\n" + new String(content) + "\nEnd of email\n");
+    if (logger.isLoggable(Level.FINER)) {
+      logger.finer("Unprocessed email content:\n" + new String(content) + "\nEnd of email\n");
     }
 
-    final String mainEmailRecipient = URLDecoder.decode(uri.substring(REQUEST_URI_PREFIX.length()),
-        "utf8");
-    if (mainEmailRecipient.startsWith(OUTGOING_EMAIL_PREFIX)) {
-      final String waveletToken = mainEmailRecipient.substring(OUTGOING_EMAIL_PREFIX.length())
-          .split("@")[0];
-      updateMessageIdForWavelet(waveletToken, message);
+    if (message.getFrom() == null) {
+      logger.info("Email has no From header: discarding.");
+      return;
+    }
+    if (message.getFrom().size() != 1) {
+      logger.info("Email has " + message.getFrom().size() + " From header(s): discarding.");
+      return;
+    }
+
+    if (message.getMessageId() == null) {
+      logger.info("Email has no message ID: discarding.");
+      return;
+    }
+    Matcher idMatcher = markupPattern.matcher(message.getMessageId());
+    if (!idMatcher.find()) {
+      logger.warning("Email has invalid Message-ID: " + message.getMessageId());
+      return;
+    }
+    final String messageId = idMatcher.group(1);
+
+    PersistenceManager pm = pmFactory.getPersistenceManager();
+    Transaction tx = pm.currentTransaction();
+    try {
+      tx.begin();
+      pm.getObjectById(PersistentEmail.class, messageId);
+      logger.info("Email with message ID: " + messageId + " already exists: ignoring.");
+      // This happens with emails with multiple Wave proxied-for email addresses in the To header:
+      // an email is sent for each such address to the robot.
+      return;
+    } catch (JDOObjectNotFoundException onfe) {
+      // This means the message ID is unknown: we need to process this email, so keep going.
+    } finally {
+      if (tx.isActive())
+        tx.rollback();
+      pm.close();
+    }
+
+    final String recipient = URLDecoder.decode(uri.substring(REQUEST_URI_PREFIX.length()), "utf8");
+    if (recipient.startsWith(OUTGOING_EMAIL_PREFIX)) {
+      String[] split = recipient.split("@");
+      if (split.length != 2) {
+        logger.warning("Email has invalid recipient address: " + recipient + " : discarding.");
+        return;
+      }
+      final String temporaryMessageId = split[0];
+      updateMessageIdInPersistentEmail(temporaryMessageId, messageId);
       return;
     }
 
     final String mainWaveRecipient = hostingProvider
-        .getWaveParticipantIdFromIncomingEmailAddress(mainEmailRecipient);
+        .getWaveParticipantIdFromIncomingEmailAddress(recipient);
     if (mainWaveRecipient == null) {
-      logger.info("Discarding incoming email to invalid recipient: " + mainEmailRecipient);
+      logger.info("Discarding email to invalid recipient: " + recipient);
       return;
     }
     logger.info("Incoming message for Wave recipient: " + mainWaveRecipient);
@@ -148,6 +183,7 @@ public class IncomingEmailServlet extends HttpServlet {
     waveParticipants.add(mainWaveRecipient);
     if (message.getTo() != null) {
       for (Address to : message.getTo()) {
+        // TODO(taton) Can this be anything else but Mailbox?
         if (to instanceof Mailbox) {
           final Mailbox emailRecipient = (Mailbox) to;
           final String waveRecipient = hostingProvider
@@ -158,32 +194,32 @@ public class IncomingEmailServlet extends HttpServlet {
             waveParticipants.add(hostingProvider.getRobotProxyForFromEmailAddress(emailRecipient
                 .getAddress()));
         }
-        // TODO(taton) Handle groups of addresses.
       }
     }
-    // TODO(taton) Handle cc'ed addresses as well.
-
-    String messageId = null;
-    if (message.getMessageId() == null) {
-      logger.warning("Incoming email has no Message-ID:\n" + new String(content));
-      // TODO(taton) Generate a message ID based on a hash of the email content?
-      return;
-    } else {
-      Matcher matcher = markupPattern.matcher(message.getMessageId());
-      if (!matcher.find()) {
-        logger.warning("Incoming email has invalid Message-ID: " + message.getMessageId());
-        return;
+    if (message.getCc() != null) {
+      for (Address cc : message.getCc()) {
+        if (cc instanceof Mailbox) {
+          final Mailbox emailRecipient = (Mailbox) cc;
+          final String waveRecipient = hostingProvider
+              .getWaveParticipantIdFromIncomingEmailAddress(emailRecipient.getAddress());
+          if (waveRecipient != null)
+            waveParticipants.add(waveRecipient);
+          else
+            waveParticipants.add(hostingProvider.getRobotProxyForFromEmailAddress(emailRecipient
+                .getAddress()));
+        }
       }
-      messageId = matcher.group(1);
     }
 
-    final PersistentEmail pe = new PersistentEmail(messageId, references, waveParticipants);
-    final EmailToProcess etp = new EmailToProcess(messageId, content);
-    storeMessage(etp, pe);
+    // TODO(taton) We should have a better representation of users.
+    final PersistentEmail email = new PersistentEmail(messageId, references, waveParticipants);
+    final EmailToProcess rawEmail = new EmailToProcess(messageId, content);
+    storeMessage(rawEmail, email);
   }
 
   /**
    * Stores an incoming email message in the data store.
+   * TODO(taton) Remove rawEmail when the active API is ready.
    * 
    * @param rawEmail The raw email to be processed the next time the robot is triggered from a Wave
    *          server.
@@ -194,13 +230,14 @@ public class IncomingEmailServlet extends HttpServlet {
     PersistenceManager pm = pmFactory.getPersistenceManager();
     Transaction tx = pm.currentTransaction();
     try {
+      logger.info("Storing incoming email with Message-ID: " + email.getMessageId()
+          + " for later processing.");
       tx.begin();
       pm.makePersistent(email);
       tx.commit();
       tx.begin();
       pm.makePersistent(rawEmail);
       tx.commit();
-      logger.info("Incoming email stored with ID " + pm.getObjectId(email));
     } finally {
       if (tx.isActive())
         tx.rollback();
@@ -209,39 +246,25 @@ public class IncomingEmailServlet extends HttpServlet {
   }
 
   /**
-   * Stores a dummy PersistentEmail to link a Wavelet with an outgoing email sent by ourselves.
-   *
-   * @param waveletToken The token identifying the WaveletView to link to.
-   * @param message The outgoing email BCC'ed to ourselves.
+   * Updates the message ID of a PersistentEmail created with a temporary message ID. This happens
+   * when we receive an email sent by the robot and BCC'ed to ourself.
+   * 
+   * @param temporaryMessageId The temporary message ID of the PersistentEmail to update.
+   * @param messageId The message ID to update the PersistentEmail with.
    */
-  public void updateMessageIdForWavelet(String waveletToken, Message message) {
-    Matcher matcher = markupPattern.matcher(message.getMessageId());
-    if (!matcher.find()) {
-      logger.warning("Unable to parse incoming email message ID: " + message.getMessageId());
-      return;
-    }
-    final String messageId = matcher.group(1);
+  public void updateMessageIdInPersistentEmail(String temporaryMessageId, String messageId) {
 
     PersistenceManager pm = pmFactory.getPersistenceManager();
     Transaction tx = pm.currentTransaction();
     try {
-      Query query = pm.newQuery("select id from " + WaveletView.class.getName()
-          + " where emailAddressToken == '" + waveletToken + "'");
-      List<String> waveletViewIds = (List<String>) query.execute();
-
-      if (waveletViewIds.size() == 1) {
-        WaveletView waveletView = pm.getObjectById(WaveletView.class, waveletViewIds.get(0));
-        PersistentEmail email = new PersistentEmail(messageId, new HashSet<String>(),
-            new HashSet<String>());
-        email.setWaveAndWaveletId(waveletView.getWaveId(), waveletView.getWaveletId());
-        tx.begin();
-        pm.makePersistent(email);
-        tx.commit();
-        logger.info("Updating wavelet " + waveletView.getId() + " with Message ID " + messageId);
-      } else {
-        logger.warning("Expecting exactly one WaveletView with email address token: "
-            + waveletToken);
-      }
+      logger.info("Updating PersistentEmail with temporary message ID " + temporaryMessageId
+          + " with effective Message ID " + messageId);
+      tx.begin();
+      PersistentEmail email = pm.getObjectById(PersistentEmail.class, temporaryMessageId);
+      email.setMessageId(messageId);
+      tx.commit();
+    } catch (JDOObjectNotFoundException onfe) {
+      logger.warning("Unknown PersistentEmail with temporary message ID: " + temporaryMessageId);
     } finally {
       if (tx.isActive())
         tx.rollback();

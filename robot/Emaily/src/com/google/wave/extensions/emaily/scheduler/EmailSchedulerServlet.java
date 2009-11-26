@@ -30,7 +30,7 @@ import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.config.EmailyConfig;
 import com.google.wave.extensions.emaily.data.DataAccess;
-import com.google.wave.extensions.emaily.data.WaveletView;
+import com.google.wave.extensions.emaily.data.WaveletData;
 import com.google.wave.extensions.emaily.email.EmailSender.EmailSendingException;
 
 /**
@@ -81,15 +81,15 @@ public class EmailSchedulerServlet extends HttpServlet {
       logger.info("Querying sendable emails");
       long endTime = Calendar.getInstance().getTimeInMillis()
           + emailyConfig.getLong(MAX_SERVING_TIME) * 1000;
-      List<?> ids = dataAccessProvider.get().getWaveletIdsToSend();
-      for (Object idObj : ids) {
+      List<String> ids = dataAccessProvider.get().getWaveletIdsToSend();
+      for (String id : ids) {
         try {
           if (Calendar.getInstance().getTimeInMillis() >= endTime) {
             break;
           }
-          logger.info("WaveletView to process: " + (String) idObj);
-          WaveletView waveletView = dataAccessProvider.get().getWaveletView((String) idObj);
-          sender.SendScheduledEmail(waveletView);
+          logger.info("WaveletData to process: " + id);
+          WaveletData waveletData = dataAccessProvider.get().getWaveletData(id);
+          sender.sendScheduledEmails(waveletData);
           dataAccessProvider.get().commit();
         } catch (EmailSendingException e) {
           // If it cannot send email, we dumps the error to the log and continue with the next

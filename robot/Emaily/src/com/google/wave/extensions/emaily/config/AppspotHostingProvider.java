@@ -46,6 +46,7 @@ public class AppspotHostingProvider implements HostingProvider {
    * incoming email.
    */
   private final Pattern incomingEmailAddressPattern;
+  private final Pattern proxyingForWaveAddressPattern;
 
   // Injected dependencies
   private final EmailyConfig emailyConfig;
@@ -67,6 +68,8 @@ public class AppspotHostingProvider implements HostingProvider {
     // This pattern recognizes "anything+anything@app-id.appspotmail.com".
     // For now, it seems AppEngine only routes incoming email sent to these address forms.
     incomingEmailAddressPattern = Pattern.compile("(.*)\\+(.*)@" + appName + ".appspotmail.com");
+    // This pattern recognizes app-id+anything+anything@appspot.com.
+    proxyingForWaveAddressPattern = Pattern.compile(appName + "\\+(.*)\\+(.*)@appspot.com");
   }
 
   @Override
@@ -116,6 +119,14 @@ public class AppspotHostingProvider implements HostingProvider {
     Mailbox mailbox = Mailbox.parse(address);
     return String.format("%s+%s+%s@appspot.com", appName, mailbox.getLocalPart(), mailbox
         .getDomain());
+  }
+  
+  @Override
+  public String getEmailAddressFromRobotProxyForWaveId(String proxyFor) {
+    Matcher m = proxyingForWaveAddressPattern.matcher(proxyFor);
+    if (!m.matches())
+      return null;
+    return m.group(1) + "@" + m.group(2);
   }
 
   @Override

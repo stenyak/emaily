@@ -29,8 +29,8 @@ import com.google.wave.api.Event;
 import com.google.wave.api.EventType;
 import com.google.wave.api.RobotMessageBundle;
 import com.google.wave.api.Wavelet;
-import com.google.wave.extensions.emaily.data.BlipVersionView;
-import com.google.wave.extensions.emaily.data.WaveletView;
+import com.google.wave.extensions.emaily.data.BlipData;
+import com.google.wave.extensions.emaily.data.WaveletData;
 
 /**
  * Utility functions for debugging Wave and Robot interactions and datastore entities.
@@ -103,53 +103,43 @@ public class DebugHelper {
   }
 
   /**
-   * Returns debug information about a WaveletView data object.
+   * Returns debug information about a wavelet data object.
    * 
-   * @param waveletView The wavelet view to dump.
+   * @param waveletData The wavelet data to dump.
    * @return The debug string.
    */
-  public String printWaveletViewInfo(WaveletView waveletView) {
+  public String printWaveletDataInfo(WaveletData waveletData) {
     StringBuilder sb = new StringBuilder();
-    printWaveletViewInfo(sb, waveletView);
+    printWaveletDataInfo(sb, waveletData);
     return sb.toString();
   }
 
   /**
-   * Returns debug information about a WaveletView data object.
+   * Returns debug information about a wavelet data object.
    * 
    * @param sb The stringbuffer to append the information to.
-   * @param waveletView The wavelet view to dump.
+   * @param waveletData The wavelet data to dump.
    */
-  public void printWaveletViewInfo(StringBuilder sb, WaveletView waveletView) {
-    sb.append("WaveletView info:\n");
-    sb.append("Wavelet Id: ").append(waveletView.getWaveletId()).append('\n');
-    sb.append("User email: ").append(waveletView.getEmail()).append('\n');
-    sb.append("Email address token: ").append(waveletView.getEmailAddressToken()).append('\n');
-    printTimestamp(sb, "Last email sent time: ", waveletView.getLastEmailSentTime());
-    printTimestamp(sb, "Time for sending:     ", waveletView.getTimeForSending());
-    sb.append("Sent blips: \n");
-    for (BlipVersionView b : waveletView.getSentBlips()) {
-      sb.append("- Blip Id: ").append(b.getBlipId()).append('\n');
-      sb.append("  Blip version: ").append(b.getVersion()).append('\n');
-      sb.append("  Participants:");
-      StrUtil.join(sb, b.getParticipants(), ", ");
-      sb.append('\n');
-      printTimestamp(sb, "  First edited:     ", b.getFirstEditedTimestamp());
-      printTimestamp(sb, "  Last changed:     ", b.getLastChangedTimestamp());
-      printTimestamp(sb, "  Last submitted:   ", b.getLastSubmittedTimestamp());
-      printTimestamp(sb, "  Becomes sendable: ", b.getTimeToBecomeSendable());
-      // sb.append("  Content:").append(b.getContent()).append('\n');
-    }
+  public void printWaveletDataInfo(StringBuilder sb, WaveletData waveletData) {
+    sb.append("WaveletData info:\n");
+    sb.append("Wave Id: ").append(waveletData.getWaveId()).append('\n');
+    sb.append("Wavelet Id: ").append(waveletData.getWaveletId()).append('\n');
+    sb.append("SendMode: ").append(waveletData.getSendMode()).append('\n');
+    sb.append("Title: ").append(waveletData.getTitle()).append('\n');
+    sb.append("Email address token: ").append(waveletData.getEmailAddressToken()).append('\n');
+    printTimestamp(sb, "Last email sent time: ", waveletData.getLastEmailSentTime());
+    printTimestamp(sb, "Time for sending:     ", waveletData.getTimeForSending());
     sb.append("Unsent blips: \n");
-    for (BlipVersionView b : waveletView.getUnsentBlips()) {
+    for (BlipData b : waveletData.getUnsentBlips()) {
       sb.append("- Blip Id: ").append(b.getBlipId()).append('\n');
       sb.append("  Blip version: ").append(b.getVersion()).append('\n');
       sb.append("  Participants:");
-      StrUtil.join(sb, b.getParticipants(), ", ");
+      StrUtil.join(sb, b.getContributors(), ", ");
       sb.append('\n');
       printTimestamp(sb, "  First edited:     ", b.getFirstEditedTimestamp());
       printTimestamp(sb, "  Last changed:     ", b.getLastChangedTimestamp());
       printTimestamp(sb, "  Last submitted:   ", b.getLastSubmittedTimestamp());
+      printTimestamp(sb, "  Manual send req.: ", b.getManualSendRequestTimestamp());
       printTimestamp(sb, "  Becomes sendable: ", b.getTimeToBecomeSendable());
       sb.append("  Content:").append(b.getContent()).append('\n');
     }

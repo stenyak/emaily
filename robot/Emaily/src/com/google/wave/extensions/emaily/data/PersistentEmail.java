@@ -58,6 +58,11 @@ public class PersistentEmail implements Serializable {
     return this.messageId;
   }
 
+  /** Updates the Message-ID. */
+  public void setMessageId(String messageId) {
+    this.messageId = messageId;
+  }
+  
   /** @return The ID of the Wavelet containing this message. */
   public String getWaveletId() {
     return this.waveletId;

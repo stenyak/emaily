@@ -14,6 +14,7 @@
  */
 package com.google.wave.extensions.emaily.data;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -28,15 +29,39 @@ import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
 /**
- * Data object for a wavelet view. A wavelet view is a wavelet from an email user's perspective.
+ * Data object for a wavelet. This contains information about a wavelet
  * 
  * @author dlux
  */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
-public class WaveletView {
+public class WaveletData {
 
-  @NotPersistent
   private static final Random randomGenerator = new Random();
+
+  /** Builds a synthetic WaveletData ID from the wave id and wavelet id. */
+  public static String buildId(String waveId, String waveletId) {
+    return waveId + ' ' + waveletId;
+  }
+
+  /**
+   * Splits a synthetic WaveletData ID into its wave id and wavelet id and writes them into their
+   * respecitve non-persistent fields.
+   * 
+   * @return the Wave ID, Wavelet ID.
+   */
+  private void splitId() {
+    String[] idparts = id.split(" ", 2);
+    waveId = idparts[0];
+    waveletId = idparts[1];
+  }
+
+  /**
+   * @return A new unique token to embed in the from or reply-to email address to link back to this
+   *         wavelet.
+   */
+  private static String generateNewEmailAddressToken() {
+    return new BigInteger(130, randomGenerator).toString(32);
+  }
 
   /**
    * The ID of this entity consists of two things: the wavelet Id and the email address of the user,
@@ -46,6 +71,15 @@ public class WaveletView {
   @Persistent
   private String id;
 
+  @NotPersistent
+  private String waveId;
+
+  @NotPersistent
+  private String waveletId;
+
+  /**
+   * The version number of the wavelet.
+   */
   @Persistent
   private long version;
 
@@ -62,94 +96,84 @@ public class WaveletView {
   @Persistent
   private String rootBlipId;
 
-  @Persistent(mappedBy = "waveletView")
+  /**
+   * Participants on the wave.
+   */
+  @Persistent
+  private List<String> participants;
+
+  /**
+   * List of unsent blips on the wave.
+   */
+  @Persistent(mappedBy = "waveletData")
   @Order(extensions = @Extension(vendorName = "datanucleus", key = "list-ordering", value = "firstEditedTimestamp asc"))
-  private List<BlipVersionView> unsentBlips;
+  private List<BlipData> unsentBlips;
 
   // TODO(dlux): once the storage is sorted out, store the sent blips also.
   // @Persistent
   // @Order(extensions = @Extension(vendorName="datanucleus", key="list-ordering",
   // value="firstEditedTimestamp asc"))
-  // private List<BlipVersionView> sentBlips = new ArrayList<BlipVersionView>();
+  // private List<BlipData> sentBlips = new ArrayList<BlipData>();
 
+  /**
+   * The timestamp when the last email was sent from this wavelet.
+   */
   @Persistent
   private long lastEmailSentTime;
 
-  /** nullable: null means infinity. */
+  /**
+   * Time for the next email sending from this wavelet.
+   * 
+   * Nullable: null means infinity: no email is scheduled.
+   * */
   @Persistent
   private Long timeForSending;
+
+  public enum SendMode {
+    AUTOMATIC, MANUAL
+  };
+
+  /**
+   * Whether this wavelet is automatic or manually sent.
+   */
+  @Persistent
+  private SendMode sendMode;
 
   /**
    * Constructor for an empty object with the required fields and default values.
    * 
-   * @param waveletId
-   * @param email
+   * @param waveId The wave id
+   * @param waveletId The wavelet id
+   * @param rootBlipId The blip id of the root blip
    */
-  public WaveletView(String waveId, String waveletId, String email, String rootBlipId) {
-    this.id = buildId(waveId, waveletId, email);
+  public WaveletData(String waveId, String waveletId, String rootBlipId) {
+    this.id = buildId(waveId, waveletId);
     this.emailAddressToken = generateNewEmailAddressToken();
-    this.unsentBlips = new ArrayList<BlipVersionView>();
-    // this.sentBlips = new ArrayList<BlipVersionView>();
+    this.unsentBlips = new ArrayList<BlipData>();
+    // this.sentBlips = new ArrayList<BlipData>();
     this.rootBlipId = rootBlipId;
+    this.participants = new ArrayList<String>();
   }
+
+  // Accessors for the composite primary key
 
   /** @return The Wave ID. */
   public String getWaveId() {
-    return splitId(id)[0];
+    if (waveId == null)
+      splitId();
+    return waveId;
   }
 
   /** @return The Wavelet ID. */
   public String getWaveletId() {
-    return splitId(id)[1];
+    if (waveletId == null)
+      splitId();
+    return waveletId;
   }
 
-  /** @return The email recipient address this WaveletView is addressed to. */
-  public String getEmail() {
-    return splitId(id)[2];
-  }
-
-  /** @return The synthetic ID of the WaveletView. */
+  /** @return The synthetic ID of the wavelet data. */
   public String getId() {
     return id;
-  }
-
-  /** Builds a synthetic WaveletView ID from the Wavelet Id and email recipient address. */
-  public static String buildId(String waveId, String waveletId, String email) {
-    return waveId + ' ' + waveletId + ' ' + email;
-  }
-
-  /**
-   * Splits a synthetic WaveletView ID into its Wavelet ID and its recipient email address.
-   * 
-   * @return the Wave ID, Wavelet ID and the recipient email address.
-   */
-  private static String[] splitId(String id) {
-    String[] idArray = id.split(" ", 3);
-    // Newest key format:
-    if (idArray.length == 3) return idArray;
-    // Without waveId (temporary support):
-    if (idArray.length == 2) {
-      String[] newIdArray = new String[3];
-      newIdArray[0] = "";
-      newIdArray[1] = idArray[0];
-      newIdArray[2] = idArray[1];
-      return newIdArray;
-    }
-    // Invalid id:
-    throw new IllegalArgumentException("Invalid key");
-  }
-
-  /**
-   * @return A new unique token to embed in the from or reply-to email address to link back to this
-   *         WaveletView.
-   */
-  private static String generateNewEmailAddressToken() {
-    long randomNumber = randomGenerator.nextLong();
-    if (randomNumber > 0) {
-      return Long.toString(randomNumber);
-    } else {
-      return Long.toString(-randomNumber) + "x";
-    }
   }
 
   // Accessors for the rest of the fields
@@ -167,24 +191,20 @@ public class WaveletView {
     return emailAddressToken;
   }
 
-  public void setEmailAddressToken(String emailAddressToken) {
-    this.emailAddressToken = emailAddressToken;
-  }
-
-  public List<BlipVersionView> getUnsentBlips() {
+  public List<BlipData> getUnsentBlips() {
     return unsentBlips;
   }
 
-  public void setUnsentBlips(List<BlipVersionView> unsentBlips) {
+  public void setUnsentBlips(List<BlipData> unsentBlips) {
     this.unsentBlips = unsentBlips;
   }
 
-  public List<BlipVersionView> getSentBlips() {
+  public List<BlipData> getSentBlips() {
     // return sentBlips;
-    return new ArrayList<BlipVersionView>();
+    return new ArrayList<BlipData>();
   }
 
-  public void setSentBlips(List<BlipVersionView> sentBlips) {
+  public void setSentBlips(List<BlipData> sentBlips) {
     // this.sentBlips = sentBlips;
   }
 
@@ -226,7 +246,24 @@ public class WaveletView {
     return rootBlipId;
   }
 
-  public void setRootBlipId(String rootBlipId) {
-    this.rootBlipId = rootBlipId;
+  public List<String> getParticipants() {
+    return participants;
+  }
+
+  public void setParticipants(List<String> participants) {
+    this.participants = participants;
+  }
+
+  public SendMode getSendMode() {
+    return sendMode;
+  }
+
+  public void setSendMode(SendMode sendMode) {
+    this.sendMode = sendMode;
+  }
+
+  @Override
+  public String toString() {
+    return "WaveletData(id:" + getId() + ")";
   }
 }

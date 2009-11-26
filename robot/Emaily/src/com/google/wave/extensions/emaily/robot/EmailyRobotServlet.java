@@ -50,7 +50,6 @@ import com.google.wave.api.Blip;
 import com.google.wave.api.Range;
 import com.google.wave.api.RobotMessageBundle;
 import com.google.wave.api.StyleType;
-import com.google.wave.api.StyledText;
 import com.google.wave.api.TextView;
 import com.google.wave.api.Wavelet;
 import com.google.wave.extensions.emaily.config.EmailyConfig;
@@ -108,8 +107,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     updateWaveletIdForEmail(bundle);
     String proxyingFor = getProxyingFor();
     if (!proxyingFor.isEmpty()) {
-      String email = hostingProvider.getEmailAddressFromRobotProxyFor(proxyingFor);
-      emailUserProxyEventHandler.processEvents(bundle, email);
+      emailUserProxyEventHandler.processEvents(bundle);
     } else {
       robotNoProxyEventHandler.processEvents(bundle);
     }
@@ -136,6 +134,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     }
   }
 
+  private final static String CREATOR_MESSAGE_ID = "Creator-Message-ID";
+
   /**
    * Updates the wavelet ID reference for the email representing this wavelet.
    * 
@@ -143,19 +143,20 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    */
   private void updateWaveletIdForEmail(RobotMessageBundle bundle) {
     final Wavelet wavelet = bundle.getWavelet();
-    if (!wavelet.hasDataDocument("Message-ID"))
+    if (!wavelet.hasDataDocument(CREATOR_MESSAGE_ID))
       return;
     PersistenceManager pm = pmFactory.getPersistenceManager();
     Transaction tx = pm.currentTransaction();
     tx.begin();
-    String messageId = wavelet.getDataDocument("Message-ID");
-    logger.info("Wavelet links to Message-ID: " + messageId);
+    String messageId = wavelet.getDataDocument(CREATOR_MESSAGE_ID);
+    logger.info("Adding reference from email with Message-ID: " + messageId + " to "
+        + wavelet.getWaveId() + " " + wavelet.getWaveletId());
     try {
       PersistentEmail email = (PersistentEmail) pm.getObjectById(PersistentEmail.class, messageId);
       if (email.getWaveletId() == null) {
         // Attach the Wavelet ID to the email.
         email.setWaveAndWaveletId(wavelet.getWaveId(), wavelet.getWaveletId());
-        wavelet.setDataDocument("Message-ID", null);
+        wavelet.setDataDocument(CREATOR_MESSAGE_ID, null);
 
       } else {
         if (!email.getWaveletId().equals(wavelet.getWaveletId())) {
@@ -231,6 +232,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   /**
    * Processes one incoming email. Appends a new blip to the existing Wavelet if one exists already
    * for the thread the email belongs to, otherwise creates a new Wavelet.
+   * TODO(taton) Refactor all email processing into a single class. 
    * 
    * @param bundle
    * @param pm
@@ -253,14 +255,14 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
           if (reference.getWaveletId() == null)
             continue;
           if (!reference.getWaveletId().isEmpty()) {
-            logger.log(Level.FINE, "Found existing Wavelet ID: " + reference.getWaveId() + " "
+            logger.log(Level.FINER, "Found existing Wavelet ID: " + reference.getWaveId() + " "
                 + reference.getWaveletId());
             threadWavelet = bundle.getWavelet(reference.getWaveId(), reference.getWaveletId());
             break;
           }
         } catch (JDOObjectNotFoundException nonfe) {
           // This just means we don't know this message ID.
-          logger.log(Level.FINE, "Unknown email message ID: " + refId);
+          logger.log(Level.FINER, "Unknown email message ID: " + refId);
         }
 
       }
@@ -279,7 +281,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
         // If the processing delay gets too long, we give up and create a new wave.
         long processingDelay = Calendar.getInstance().getTimeInMillis() - processingDate;
         if (processingDelay < config.getLong(PROCESS_EMAIL_MAX_DELAY) * 1000) {
-          logger.log(Level.FINE, "Postponing processing of incoming email " + raw.getMessageId());
+          logger.log(Level.FINER, "Postponing processing of incoming email " + raw.getMessageId());
           return false;
         }
       }
@@ -291,7 +293,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     if (threadWavelet == null) {
       // We could not link this message to an existing Wavelet:
       // create a new Wavelet and write message to the root blip.
-      logger.log(Level.FINE, "Creating a new Wavelet for message " + raw.getMessageId());
+      logger.log(Level.FINER, "Creating a new Wavelet for message " + raw.getMessageId());
       List<String> participants = new ArrayList<String>();
       participants.addAll(email.getWaveParticipants());
       Wavelet newWavelet = bundle.getWavelet().createWavelet(participants, null);
@@ -310,6 +312,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
 
   /**
    * Formats an email into a Blip.
+   * TODO(taton) Refactor all email processing into a single class. 
    * 
    * @param message The incoming email to format.
    * @param blip The blip to write into.

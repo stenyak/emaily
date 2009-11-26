@@ -1,14 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Module>
-<ModulePrefs title="Wave Emaily Target Selection Gadget">
+<ModulePrefs title="Wave Emaily Gadget" height="10">
   <Require feature="wave" />
   <Require feature="dynamic-height"/>
   <Require feature="locked-domain"/>
 </ModulePrefs>
-<Content type="html"><![CDATA[
-<form action="#" onSubmit="return formSubmitted()">
-<input type="text" name="email" value="" id="email_input">
-<input type="submit" value="Add" id="submit">
+<Content type="html" preferred_height="10"><![CDATA[
+<form action="#" onSubmit="return false;" style="margin-bottom: 0">
+<table>
+  <tr>
+    <td>
+      <input type="text" name="email" value="" id="email_input" length="30">
+      <input type="submit" value="Add" id="submit" onClick="addClicked()">
+    </td>
+    <td>
+      <input type="checkbox" name="automatic_send" id="automatic_send" value="1" onChange="return changeCheckbox();">
+      <label for="automatic_send">Automatic send</label>
+    </td>
+  </tr>
+</table>
 </form>
 
 <script>
@@ -18,23 +28,38 @@
 // is not working right now, so all added keys are currently preserved. 
 var EMAIL_KEY_PREFIX = "email:";
 
+// Send mode. Can be:
+// - Manual:    The user has to submit each blip for sending.
+// - Automatic: After a given time, the blip is automatically sent.
+//              When not set, this is the default.
+// The constants must match WaveletData.SendMode enum.
+var SEND_MODE = "send_mode";
+var MANUAL_SEND = "MANUAL";
+var AUTOMATIC_SEND = "AUTOMATIC"; 
+
 var submitObj = document.getElementById('submit');
 var inputObj = document.getElementById('email_input');
+var automaticSendObj = document.getElementById('automatic_send');
 
-function formSubmitted() {
+function changeCheckbox() {
+  wave.getState().submitValue(SEND_MODE, automaticSendObj.checked ? AUTOMATIC_SEND : MANUAL_SEND);
+}
+
+function addClicked() {
   wave.getState().submitValue(EMAIL_KEY_PREFIX + inputObj.value, "1");
   inputObj.value = "";
   return false;
 }
 
 function stateUpdated() {
+  var state = wave.getState();
+  if (!state) return;  // Sometimes this function is called too early.
+  automaticSendObj.checked = state.get(SEND_MODE) == MANUAL_SEND ? 0 : 1;
   gadgets.window.adjustHeight();
   return;
   // TODO(dlux): The following code does not work, due to Java API bug: it does not allow removing
   // gadget state keys from a robot. Once it is working, we can use this code.
   var addInProgress = false;
-  var state = wave.getState();
-  if (!state) return;  // Sometimes this function is called too early.
   var keys = state.getKeys();
   var adding = "";  
   for (var i = 0; i < keys.length; ++i) {
