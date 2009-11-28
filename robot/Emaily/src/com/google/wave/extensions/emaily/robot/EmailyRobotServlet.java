@@ -231,8 +231,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
 
   /**
    * Processes one incoming email. Appends a new blip to the existing Wavelet if one exists already
-   * for the thread the email belongs to, otherwise creates a new Wavelet.
-   * TODO(taton) Refactor all email processing into a single class. 
+   * for the thread the email belongs to, otherwise creates a new Wavelet. TODO(taton) Refactor all
+   * email processing into a single class.
    * 
    * @param bundle
    * @param pm
@@ -255,14 +255,14 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
           if (reference.getWaveletId() == null)
             continue;
           if (!reference.getWaveletId().isEmpty()) {
-            logger.log(Level.FINER, "Found existing Wavelet ID: " + reference.getWaveId() + " "
+            logger.finer("Found existing Wavelet ID: " + reference.getWaveId() + " "
                 + reference.getWaveletId());
             threadWavelet = bundle.getWavelet(reference.getWaveId(), reference.getWaveletId());
             break;
           }
         } catch (JDOObjectNotFoundException nonfe) {
           // This just means we don't know this message ID.
-          logger.log(Level.FINER, "Unknown email message ID: " + refId);
+          logger.finer("Unknown email message ID: " + refId);
         }
 
       }
@@ -281,7 +281,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
         // If the processing delay gets too long, we give up and create a new wave.
         long processingDelay = Calendar.getInstance().getTimeInMillis() - processingDate;
         if (processingDelay < config.getLong(PROCESS_EMAIL_MAX_DELAY) * 1000) {
-          logger.log(Level.FINER, "Postponing processing of incoming email " + raw.getMessageId());
+          logger.finer("Postponing processing of incoming email " + raw.getMessageId());
           return false;
         }
       }
@@ -293,7 +293,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     if (threadWavelet == null) {
       // We could not link this message to an existing Wavelet:
       // create a new Wavelet and write message to the root blip.
-      logger.log(Level.FINER, "Creating a new Wavelet for message " + raw.getMessageId());
+      logger.finer("Creating a new Wavelet for message " + raw.getMessageId());
       List<String> participants = new ArrayList<String>();
       participants.addAll(email.getWaveParticipants());
       Wavelet newWavelet = bundle.getWavelet().createWavelet(participants, null);
@@ -311,51 +311,30 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   }
 
   /**
-   * Formats an email into a Blip.
-   * TODO(taton) Refactor all email processing into a single class. 
+   * Formats an email into a Blip. TODO(taton) Refactor all email processing into a single class.
    * 
    * @param message The incoming email to format.
    * @param blip The blip to write into.
    */
   private void writeMessageToBlip(Message message, Blip blip) throws MimeIOException, IOException {
-    StringBuilder sb = new StringBuilder();
     String author = null;
-    List<Range> ranges = new ArrayList<Range>();
 
     if (message.getFrom() != null) {
-      StringBuilder fromSB = new StringBuilder();
       for (Mailbox from : message.getFrom()) {
         if (from == null)
           continue;
         if (author == null)
           author = hostingProvider.getRobotProxyForFromEmailAddress(from.getAddress());
-        if (fromSB.length() > 0)
-          fromSB.append(", ");
-        fromSB.append(from.toString());
-      }
-      if (fromSB.length() > 0) {
-        final String prefix = "From: ";
-        ranges.add(new Range(sb.length(), sb.length() + prefix.length()));
-        sb.append(prefix).append(fromSB).append('\n');
+        if (author != null)
+          break;
       }
     }
-    if (author == null)
+    if (author == null) {
+      // Discard message instead?
       author = hostingProvider.getRobotWaveId();
-    if (message.getTo() != null) {
-      StringBuilder toSB = new StringBuilder();
-      for (Address recipient : message.getTo()) {
-        if (recipient == null)
-          continue;
-        if (toSB.length() > 0)
-          toSB.append(", ");
-        toSB.append(recipient.toString());
-      }
-      if (toSB.length() > 0) {
-        final String prefix = "To: ";
-        ranges.add(new Range(sb.length(), sb.length() + prefix.length()));
-        sb.append(prefix).append(toSB).append('\n');
-      }
     }
+
+    StringBuilder sb = new StringBuilder();
     if (message.getBody() != null) {
       StringBuilder sbBody = new StringBuilder();
       mailUtil.mimeEntityToText(sbBody, message);
@@ -363,10 +342,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     }
 
     TextView textView = blip.getDocument();
+    textView.delete();
     textView.setAuthor(author);
     textView.append(sb.toString());
-
-    for (Range range : ranges)
-      textView.setAnnotation(range, "styled-text", StyleType.BOLD.toString());
   }
 }

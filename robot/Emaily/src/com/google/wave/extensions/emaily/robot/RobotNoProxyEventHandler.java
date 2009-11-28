@@ -255,7 +255,7 @@ public class RobotNoProxyEventHandler {
       return;
     int position = 0;
     if (blip.getWavelet().getRootBlipId().equals(blip.getBlipId()))
-      position = blip.getWavelet().getTitle().length();
+      position = blip.getWavelet().getTitle().length() + 1;  // Keep the new line, too.
     logger.finer(String.format("Adding gadget to position: %d", position));
     blip.getDocument().insertElement(position, new Gadget(getSendGadgetUrl()));
   }
