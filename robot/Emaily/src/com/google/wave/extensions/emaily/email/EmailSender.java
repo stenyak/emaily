@@ -14,16 +14,11 @@
  */
 package com.google.wave.extensions.emaily.email;
 
-import java.util.Properties;
+import java.io.IOException;
 
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMessage.RecipientType;
-
+import com.google.appengine.api.mail.MailService;
+import com.google.appengine.api.mail.MailServiceFactory;
+import com.google.appengine.api.mail.MailService.Message;
 import com.google.inject.Singleton;
 
 /**
@@ -33,6 +28,7 @@ import com.google.inject.Singleton;
  */
 @Singleton
 public class EmailSender {
+  private final MailService mailService = MailServiceFactory.getMailService();
   @SuppressWarnings("serial")
   public static class EmailSendingException extends RuntimeException {
     public EmailSendingException() {
@@ -52,9 +48,6 @@ public class EmailSender {
     }
   }
 
-  private Properties props = new Properties();
-  private Session session = Session.getDefaultInstance(props, null);
-
   /**
    * Sends a simple text email.
    * 
@@ -64,15 +57,15 @@ public class EmailSender {
    * @param body The text body of the email.
    */
   public void simpleSendTextEmail(String from, String recipient, String subject, String body) {
-    // Build message
-    Message msg = new MimeMessage(session);
     try {
-      msg.setFrom(new InternetAddress(from));
-      msg.addRecipient(RecipientType.TO, new InternetAddress(recipient));
+      // Build message
+      Message msg = new Message();
+      msg.setSender(from);
+      msg.setTo(recipient);
       msg.setSubject(subject);
-      msg.setText(body);
-      Transport.send(msg);
-    } catch (MessagingException e) {
+      msg.setTextBody(body);
+      mailService.send(msg);
+    } catch (IOException e) {
       throw new EmailSendingException("Cannot send email from: " + from + ", to:" + recipient, e);
     }
   }
