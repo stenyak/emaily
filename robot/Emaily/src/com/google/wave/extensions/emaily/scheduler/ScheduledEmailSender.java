@@ -15,6 +15,9 @@
 
 package com.google.wave.extensions.emaily.scheduler;
 
+import static com.google.wave.extensions.emaily.config.AppspotHostingProvider.OUTGOING_EMAIL_PREFIX;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -24,12 +27,18 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.jdo.PersistenceManager;
+import javax.jdo.PersistenceManagerFactory;
+import javax.jdo.Transaction;
+
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.wave.extensions.emaily.config.HostingProvider;
 import com.google.wave.extensions.emaily.data.BlipData;
+import com.google.wave.extensions.emaily.data.PersistentEmail;
 import com.google.wave.extensions.emaily.data.WaveletData;
 import com.google.wave.extensions.emaily.email.EmailSender;
+import com.google.wave.extensions.emaily.email.EmailSender.EmailSendingException;
 import com.google.wave.extensions.emaily.util.DebugHelper;
 import com.google.wave.extensions.emaily.util.StrUtil;
 
@@ -39,20 +48,23 @@ import com.google.wave.extensions.emaily.util.StrUtil;
 @Singleton
 public class ScheduledEmailSender {
   // Injected dependencies
-  private final HostingProvider hostingProvider;
+  private final DebugHelper debugHelper;
   private final EmailSender emailSender;
   private final EmailSchedulingCalculator calculator;
-  private final DebugHelper debugHelper;
+  private final HostingProvider hostingProvider;
   private final Logger logger;
+  private final PersistenceManagerFactory pmFactory;
 
   @Inject
   public ScheduledEmailSender(HostingProvider hostingProvider, EmailSender emailSender,
-      EmailSchedulingCalculator calculator, DebugHelper debugHelper, Logger logger) {
+      EmailSchedulingCalculator calculator, DebugHelper debugHelper, Logger logger,
+      PersistenceManagerFactory pmFactory) {
     this.hostingProvider = hostingProvider;
     this.emailSender = emailSender;
     this.calculator = calculator;
     this.debugHelper = debugHelper;
     this.logger = logger;
+    this.pmFactory = pmFactory;
   }
 
   /**
@@ -194,7 +206,7 @@ public class ScheduledEmailSender {
     }
 
     // Send the email
-    emailSender.simpleSendTextEmail(from, email, subject, body.toString());
+    sendEmail(from, email, subject, body.toString(), waveletData);
 
     // Debug info
     if (logger.isLoggable(Level.INFO)) {
@@ -207,4 +219,37 @@ public class ScheduledEmailSender {
       logger.info(sb.toString());
     }
   }
+
+  /**
+   * Sends an email and stores a matching PersistentEmail with a temporary Message ID to be filled
+   * when we receive the BCC'ed email.
+   */
+  private void sendEmail(String from, String recipient, String subject, String body,
+      WaveletData waveletData) {
+    final String temporaryMessageId = OUTGOING_EMAIL_PREFIX + waveletData.getEmailAddressToken();
+
+    PersistentEmail email = new PersistentEmail(temporaryMessageId, new HashSet<String>(),
+        new HashSet<String>(waveletData.getParticipants()));
+    email.setWaveAndWaveletId(waveletData.getWaveId(), waveletData.getWaveletId());
+
+    List<String> recipients = new ArrayList<String>();
+    recipients.add(recipient);
+
+    List<String> bcc = new ArrayList<String>();
+    bcc.add(hostingProvider.getWaveletEmailAddress(temporaryMessageId));
+
+    PersistenceManager pm = pmFactory.getPersistenceManager();
+    Transaction tx = pm.currentTransaction();
+    try {
+      emailSender.sendTextEmail(from, recipients, bcc, subject, body);
+      tx.begin();
+      pm.makePersistent(email);
+      tx.commit();
+    } finally {
+      if (tx.isActive())
+        tx.rollback();
+      pm.close();
+    }
+  }
+
 }

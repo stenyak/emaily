@@ -15,11 +15,12 @@
 package com.google.wave.extensions.emaily.email;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import com.google.appengine.api.mail.MailService;
 import com.google.appengine.api.mail.MailServiceFactory;
-import com.google.appengine.api.mail.MailService.Message;
 import com.google.inject.Singleton;
+import com.google.wave.extensions.emaily.util.StrUtil;
 
 /**
  * Method(s) to send email.
@@ -28,7 +29,6 @@ import com.google.inject.Singleton;
  */
 @Singleton
 public class EmailSender {
-  private final MailService mailService = MailServiceFactory.getMailService();
   @SuppressWarnings("serial")
   public static class EmailSendingException extends RuntimeException {
     public EmailSendingException() {
@@ -48,25 +48,30 @@ public class EmailSender {
     }
   }
 
+  private final MailService mailService = MailServiceFactory.getMailService();
+
   /**
-   * Sends a simple text email.
+   * Sends a text email.
    * 
    * @param from The sender email address.
-   * @param recipient The email recipient.
+   * @param recipients The email recipients.
+   * @param bcc The email BCC'd recipients.
    * @param subject The subject of the email.
    * @param body The text body of the email.
    */
-  public void simpleSendTextEmail(String from, String recipient, String subject, String body) {
+  public void sendTextEmail(String from, Collection<String> recipients, Collection<String> bcc,
+      String subject, String body) {
     try {
-      // Build message
-      Message msg = new Message();
-      msg.setSender(from);
-      msg.setTo(recipient);
-      msg.setSubject(subject);
-      msg.setTextBody(body);
-      mailService.send(msg);
-    } catch (IOException e) {
-      throw new EmailSendingException("Cannot send email from: " + from + ", to:" + recipient, e);
+      MailService.Message message = new MailService.Message();
+      message.setSender(from);
+      message.setTo(recipients);
+      message.setBcc(bcc);
+      message.setSubject(subject);
+      message.setTextBody(body);
+      mailService.send(message);
+    } catch (IOException ioe) {
+      throw new EmailSendingException("Cannot send email from: " + from + ", to:"
+          + StrUtil.join(recipients, ",") + " with subject:" + subject, ioe);
     }
   }
 }

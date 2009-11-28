@@ -42,6 +42,12 @@ public class AppspotHostingProvider implements HostingProvider {
   private final String appVersion;
 
   /**
+   * When BCC'ing an outgoing email to ourself, the recipient starts with this prefix concatenated
+   * with the generated email address token.
+   */
+  public static final String OUTGOING_EMAIL_PREFIX = "outgoing_email+";
+
+  /**
    * Pattern used to decode a Wave participant ID encoded in the recipient address of an
    * incoming email.
    */
