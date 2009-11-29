@@ -148,8 +148,7 @@ public class IncomingEmailServlet extends HttpServlet {
 
     final String recipient = URLDecoder.decode(uri.substring(REQUEST_URI_PREFIX.length()), "utf8");
 
-    final String token = hostingProvider.getTokenFromTemporaryMessageID(recipient);
-    if (token != null) {
+    if (hostingProvider.isTemporaryMessageID(recipient)) {
       final String temporaryMessageId = recipient;
       updateMessageIdInPersistentEmail(temporaryMessageId, messageId);
       return;

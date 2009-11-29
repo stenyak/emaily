@@ -226,9 +226,7 @@ public class ScheduledEmailSender {
    */
   private void sendEmail(String from, String recipient, String subject, String body,
       WaveletData waveletData) {
-    final String temporaryMessageId = hostingProvider.generateTemporaryMessageID(waveletData
-        .getBccToken());
-
+    final String temporaryMessageId = hostingProvider.generateTemporaryMessageID();
     PersistentEmail email = new PersistentEmail(temporaryMessageId, new HashSet<String>(),
         new HashSet<String>(waveletData.getParticipants()));
     email.setWaveAndWaveletId(waveletData.getWaveId(), waveletData.getWaveletId());

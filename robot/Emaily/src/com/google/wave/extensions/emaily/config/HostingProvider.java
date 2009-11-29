@@ -106,17 +106,15 @@ public interface HostingProvider {
   /**
    * Generates a unique temporary message ID when sending an email.
    * 
-   * @param token A token to include in the temporary message ID.
-   * @return A unique temporary message ID including the given token.
+   * @return A unique temporary message ID.
    */
-  public String generateTemporaryMessageID(String token);
+  public String generateTemporaryMessageID();
 
   /**
-   * Extracts the token from a generated temporary message ID.
+   * Tests if a message ID is a generated temporary message ID.
    * 
-   * @param messageId A temporary message ID.
-   * @return The token used to create the temporary message ID. Null if the messageId does not
-   *         corresponds to a temporary message Id.
+   * @param messageId The message ID to test.
+   * @return True if the message ID is a temporary message ID.
    */
-  public String getTokenFromTemporaryMessageID(String messageId);
+  public boolean isTemporaryMessageID(String messageId);
 }

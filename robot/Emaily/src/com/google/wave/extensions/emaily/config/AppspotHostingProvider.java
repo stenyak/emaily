@@ -14,6 +14,7 @@
  */
 package com.google.wave.extensions.emaily.config;
 
+import java.math.BigInteger;
 import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.logging.Logger;
@@ -39,6 +40,11 @@ public class AppspotHostingProvider implements HostingProvider {
   private static final String[] requiredProperties = { PROD_VERSION };
 
   private static final Random randomGenerator = new Random();
+
+  /** @return A random unique token. */
+  private static String generateUniqueToken() {
+    return new BigInteger(130, randomGenerator).toString(32);
+  }
 
   // Application name and version
   private final String appName;
@@ -175,17 +181,12 @@ public class AppspotHostingProvider implements HostingProvider {
   }
 
   @Override
-  public String generateTemporaryMessageID(String token) {
-    return String.format("%s+%s+%d", OUTGOING_EMAIL_PREFIX, token, randomGenerator.nextLong());
+  public String generateTemporaryMessageID() {
+    return String.format("%s+%s", OUTGOING_EMAIL_PREFIX, generateUniqueToken());
   }
-
+  
   @Override
-  public String getTokenFromTemporaryMessageID(String messageId) {
-    if (!messageId.startsWith(OUTGOING_EMAIL_PREFIX))
-      return null;
-    String[] split = messageId.split("\\+");
-    if (split.length != 3)
-      return null;
-    return split[1];
+  public boolean isTemporaryMessageID(String messageId) {
+    return messageId.startsWith(OUTGOING_EMAIL_PREFIX);
   }
 }
