@@ -1,7 +1,5 @@
 package com.google.wave.extensions.emaily.email;
 
-import static com.google.wave.extensions.emaily.config.AppspotHostingProvider.OUTGOING_EMAIL_PREFIX;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -149,14 +147,10 @@ public class IncomingEmailServlet extends HttpServlet {
     }
 
     final String recipient = URLDecoder.decode(uri.substring(REQUEST_URI_PREFIX.length()), "utf8");
-    // TODO(taton) Refactor this encoding of the email address token  in HostingProvider.
-    if (recipient.startsWith(OUTGOING_EMAIL_PREFIX)) {
-      String[] split = recipient.split("@");
-      if (split.length != 2) {
-        logger.warning("Email has invalid recipient address: " + recipient + " : discarding.");
-        return;
-      }
-      final String temporaryMessageId = split[0];
+
+    final String token = hostingProvider.getTokenFromTemporaryMessageID(recipient);
+    if (token != null) {
+      final String temporaryMessageId = recipient;
       updateMessageIdInPersistentEmail(temporaryMessageId, messageId);
       return;
     }

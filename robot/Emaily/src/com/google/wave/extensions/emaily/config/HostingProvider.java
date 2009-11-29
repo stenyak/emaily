@@ -27,9 +27,8 @@ public interface HostingProvider {
 
   // TODO(dlux): clear up the naming.
   /**
-   * Returns an email address of a wave participant in the Emaily domain. This
-   * is used as an outgoing email address and this email address can receive
-   * emails from the outside.
+   * Returns an email address of a wave participant in the Emaily domain. This is used as an
+   * outgoing email address and this email address can receive emails from the outside.
    * 
    * @param waveParticipantId
    * @return
@@ -37,20 +36,19 @@ public interface HostingProvider {
   public String getEmailAddressForWaveParticipantIdInEmailyDomain(String waveParticipantId);
 
   /**
-   * Returns an email address from the "proxying for" argument of the robot
-   * query.
+   * Returns an email address from the "proxying for" argument of the robot query.
    * 
-   * @param proxyingFor The "proxying for" argument of the robot json call. If
-   *          it is an email address, then it is in the "user+host" format.
-   * @return The email address which belongs to the "proxying for argument. It
-   *         returns null if it is not an email address.
+   * @param proxyingFor The "proxying for" argument of the robot json call. If it is an email
+   *          address, then it is in the "user+host" format.
+   * @return The email address which belongs to the "proxying for argument. It returns null if it is
+   *         not an email address.
    */
   public String getEmailAddressFromRobotProxyFor(String proxyingFor);
 
   /**
    * Decodes and returns the Wave participant ID from the recipient address of an incoming email.
-   * For example:
-   * "user_id+domain.com@app_id.appspotmail.com" will be decoded as "user_id@domain.com"
+   * For example: "user_id+domain.com@app_id.appspotmail.com" will be decoded as
+   * "user_id@domain.com"
    * 
    * @param address The recipient address of the incoming email.
    * @return The Wave participant ID.
@@ -58,8 +56,7 @@ public interface HostingProvider {
   public String getWaveParticipantIdFromIncomingEmailAddress(String address);
 
   /**
-   * Encodes the address of an Email participant as a proxyingFor Wave participant ID.
-   * For example:
+   * Encodes the address of an Email participant as a proxyingFor Wave participant ID. For example:
    * "user_id@domain.com" will be encoded as "app_id+user_id+domain.com@appspot.com".
    * 
    * @param address The email participant address.
@@ -69,8 +66,7 @@ public interface HostingProvider {
   public String getRobotProxyForFromEmailAddress(String address);
 
   /**
-   * Decodes a proxyingFor Wave participant id to an email address.
-   * For example:
+   * Decodes a proxyingFor Wave participant id to an email address. For example:
    * "app_id+user_id+domain.com@appspot.com" will be decoded to "user_id@domain.com".
    * 
    * @param address The wave recipient id, which contains an encoded email address.
@@ -85,7 +81,7 @@ public interface HostingProvider {
    * @return The wave Id which is proxying for that email address.
    */
   public String getRobotWaveParticipantIdFromEmailAddress(String email);
-  
+
   /**
    * Returns true if the robot what is running is a production version.
    * 
@@ -97,13 +93,30 @@ public interface HostingProvider {
    * Returns a reply-to email address of a wavelet.
    * 
    * @param emailAddressToken The generated email address token for the wavelet data.
-   * @return The email address which can be used as an outgoing email address, and which
-   *         can be replied to.
+   * @return The email address which can be used as an outgoing email address, and which can be
+   *         replied to.
    */
   public String getWaveletEmailAddress(String emailAddressToken);
-  
+
   /**
    * @return The URL of the robot with a trailing '/'.
    */
   public String getRobotURL();
+
+  /**
+   * Generates a unique temporary message ID when sending an email.
+   * 
+   * @param token A token to include in the temporary message ID.
+   * @return A unique temporary message ID including the given token.
+   */
+  public String generateTemporaryMessageID(String token);
+
+  /**
+   * Extracts the token from a generated temporary message ID.
+   * 
+   * @param messageId A temporary message ID.
+   * @return The token used to create the temporary message ID. Null if the messageId does not
+   *         corresponds to a temporary message Id.
+   */
+  public String getTokenFromTemporaryMessageID(String messageId);
 }

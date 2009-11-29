@@ -14,6 +14,7 @@
  */
 package com.google.wave.extensions.emaily.config;
 
+import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -37,6 +38,8 @@ public class AppspotHostingProvider implements HostingProvider {
   private static final String PROD_VERSION = "hosting.appspot.prod_version";
   private static final String[] requiredProperties = { PROD_VERSION };
 
+  private static final Random randomGenerator = new Random();
+
   // Application name and version
   private final String appName;
   private final String appVersion;
@@ -48,8 +51,8 @@ public class AppspotHostingProvider implements HostingProvider {
   public static final String OUTGOING_EMAIL_PREFIX = "outgoing_email+";
 
   /**
-   * Pattern used to decode a Wave participant ID encoded in the recipient address of an
-   * incoming email.
+   * Pattern used to decode a Wave participant ID encoded in the recipient address of an incoming
+   * email.
    */
   private final Pattern incomingEmailAddressPattern;
   private final Pattern proxyingForWaveAddressPattern;
@@ -62,7 +65,7 @@ public class AppspotHostingProvider implements HostingProvider {
     // Initialize properties
     this.emailyConfig = emailyConfig;
     emailyConfig.checkRequiredProperties(requiredProperties);
-    
+
     // Set AppEngine properties from the environment.
     appName = ApiProxy.getCurrentEnvironment().getAppId();
     StringTokenizer versionTokenizer = new StringTokenizer(ApiProxy.getCurrentEnvironment()
@@ -126,7 +129,7 @@ public class AppspotHostingProvider implements HostingProvider {
     return String.format("%s+%s+%s@appspot.com", appName, mailbox.getLocalPart(), mailbox
         .getDomain());
   }
-  
+
   @Override
   public String getEmailAddressFromRobotProxyForWaveId(String proxyFor) {
     Matcher m = proxyingForWaveAddressPattern.matcher(proxyFor);
@@ -169,5 +172,20 @@ public class AppspotHostingProvider implements HostingProvider {
   /** @return The AppEngine application ID. */
   private String getAppId() {
     return isProductionVersion() ? appName : appVersion + ".latest." + appName;
+  }
+
+  @Override
+  public String generateTemporaryMessageID(String token) {
+    return String.format("%s+%s+%d", OUTGOING_EMAIL_PREFIX, token, randomGenerator.nextLong());
+  }
+
+  @Override
+  public String getTokenFromTemporaryMessageID(String messageId) {
+    if (!messageId.startsWith(OUTGOING_EMAIL_PREFIX))
+      return null;
+    String[] split = messageId.split("\\+");
+    if (split.length != 3)
+      return null;
+    return split[1];
   }
 }

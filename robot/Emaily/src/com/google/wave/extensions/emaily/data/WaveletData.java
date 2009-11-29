@@ -88,6 +88,11 @@ public class WaveletData {
   @Persistent
   private String emailAddressToken;
 
+  /** A unique token used to generate temporary message IDs when sending emails for this wavelet. */
+  @Key
+  @Persistent
+  private String bccToken;
+
   /** The title of the Wavelet. */
   @Persistent
   private String title;
@@ -149,6 +154,7 @@ public class WaveletData {
   public WaveletData(String waveId, String waveletId, String rootBlipId) {
     this.id = buildId(waveId, waveletId);
     this.emailAddressToken = generateNewEmailAddressToken();
+    this.bccToken = generateNewEmailAddressToken();
     this.unsentBlips = new ArrayList<BlipData>();
     // this.sentBlips = new ArrayList<BlipData>();
     this.rootBlipId = rootBlipId;
@@ -189,6 +195,13 @@ public class WaveletData {
   /** @return The token to use to identify group discussions. */
   public String getEmailAddressToken() {
     return emailAddressToken;
+  }
+
+  /**
+   * @return The token to use to generate temporary message IDs when sending emails for this wavelet.
+   */
+  public String getBccToken() {
+    return this.bccToken;
   }
 
   public List<BlipData> getUnsentBlips() {
