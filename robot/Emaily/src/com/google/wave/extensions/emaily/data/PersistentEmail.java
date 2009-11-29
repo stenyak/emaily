@@ -1,8 +1,13 @@
 package com.google.wave.extensions.emaily.data;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Set;
 
+import javax.jdo.PersistenceManager;
+import javax.jdo.Query;
+import javax.jdo.annotations.Extension;
+import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.Key;
 import javax.jdo.annotations.PersistenceCapable;
@@ -20,8 +25,33 @@ public class PersistentEmail implements Serializable {
 
   private static final long serialVersionUID = 8472461757525198617L;
 
-  /** The Message-ID header. */
+  /**
+   * Retrieve a PersistentEmail by its message ID.
+   * 
+   * @param pm The persistence manager.
+   * @param messageId The message ID.
+   * @return The PersistentEmail with the given message ID. Null if no such PersistentEmail exists.
+   */
+  public static PersistentEmail lookupByMessageId(PersistenceManager pm, String messageId) {
+    Query query = pm.newQuery(PersistentEmail.class, "messageId == \"" + messageId + "\"");
+    @SuppressWarnings("unchecked")
+    List<PersistentEmail> list = (List<PersistentEmail>) query.execute();
+    if (list.size() == 0)
+      return null;
+    if (list.size() > 1)
+      throw new RuntimeException(
+          "Datastore inconsistency: multiple PersistentEmail with message ID: " + messageId);
+    return list.get(0);
+  }
+
+  @SuppressWarnings("unused")
+  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+  @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
   @PrimaryKey
+  private String jdoId;
+
+  /** The Message-ID header. Cannot be a primary key since we update it. */
+  @Key
   @Persistent
   private String messageId;
 
@@ -62,7 +92,7 @@ public class PersistentEmail implements Serializable {
   public void setMessageId(String messageId) {
     this.messageId = messageId;
   }
-  
+
   /** @return The ID of the Wavelet containing this message. */
   public String getWaveletId() {
     return this.waveletId;

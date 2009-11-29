@@ -13,7 +13,6 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.Transaction;
@@ -133,18 +132,18 @@ public class IncomingEmailServlet extends HttpServlet {
     Transaction tx = pm.currentTransaction();
     try {
       tx.begin();
-      pm.getObjectById(PersistentEmail.class, messageId);
-      logger.info("Email with message ID: " + messageId + " already exists: ignoring.");
-      // This happens with emails with multiple Wave proxied-for email addresses in the To header:
-      // an email is sent for each such address to the robot.
-      return;
-    } catch (JDOObjectNotFoundException onfe) {
-      // This means the message ID is unknown: we need to process this email, so keep going.
+      if (PersistentEmail.lookupByMessageId(pm, messageId) != null) {
+        logger.info("Email with message ID: " + messageId + " already exists: ignoring.");
+        // This happens with emails with multiple Wave proxied-for email addresses in the To header:
+        // an email is sent for each such address to the robot.
+        return;
+      }
     } finally {
       if (tx.isActive())
         tx.rollback();
       pm.close();
     }
+    // This means the message ID is unknown: we need to process this email.
 
     final String recipient = URLDecoder.decode(uri.substring(REQUEST_URI_PREFIX.length()), "utf8");
 
@@ -255,11 +254,13 @@ public class IncomingEmailServlet extends HttpServlet {
       logger.info("Updating PersistentEmail with temporary message ID " + temporaryMessageId
           + " with effective Message ID " + messageId);
       tx.begin();
-      PersistentEmail email = pm.getObjectById(PersistentEmail.class, temporaryMessageId);
+      PersistentEmail email = PersistentEmail.lookupByMessageId(pm, temporaryMessageId);
+      if (email == null) {
+        logger.warning("Unknown PersistentEmail with temporary message ID: " + temporaryMessageId);
+        return;
+      }
       email.setMessageId(messageId);
       tx.commit();
-    } catch (JDOObjectNotFoundException onfe) {
-      logger.warning("Unknown PersistentEmail with temporary message ID: " + temporaryMessageId);
     } finally {
       if (tx.isActive())
         tx.rollback();

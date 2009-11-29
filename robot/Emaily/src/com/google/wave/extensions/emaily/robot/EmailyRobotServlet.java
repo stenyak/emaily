@@ -147,12 +147,16 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       return;
     PersistenceManager pm = pmFactory.getPersistenceManager();
     Transaction tx = pm.currentTransaction();
-    tx.begin();
-    String messageId = wavelet.getDataDocument(CREATOR_MESSAGE_ID);
-    logger.info("Adding reference from email with Message-ID: " + messageId + " to "
-        + wavelet.getWaveId() + " " + wavelet.getWaveletId());
     try {
-      PersistentEmail email = (PersistentEmail) pm.getObjectById(PersistentEmail.class, messageId);
+      tx.begin();
+      String messageId = wavelet.getDataDocument(CREATOR_MESSAGE_ID);
+      logger.info("Adding reference from email with Message-ID: " + messageId + " to "
+          + wavelet.getWaveId() + " " + wavelet.getWaveletId());
+      PersistentEmail email = PersistentEmail.lookupByMessageId(pm, messageId);
+      if (email == null) {
+        logger.log(Level.WARNING, "Missing PersistentEmail with message ID: " + messageId);
+        return;
+      }
       if (email.getWaveletId() == null) {
         // Attach the Wavelet ID to the email.
         email.setWaveAndWaveletId(wavelet.getWaveId(), wavelet.getWaveletId());
@@ -165,10 +169,11 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
               + " but email has Wavelet ID " + email.getWaveletId());
         }
       }
-    } catch (JDOObjectNotFoundException onf) {
-      logger.log(Level.WARNING, "Cannot retrieve PersistentObject", onf);
+      tx.commit();
+    } finally {
+      if (tx.isActive())
+        tx.rollback();
     }
-    tx.commit();
   }
 
   /**
@@ -189,35 +194,23 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
 
       if (emailsToProcess.isEmpty())
         return;
-      Map<String, EmailToProcess> rawMap = new HashMap<String, EmailToProcess>();
-      Set<StringIdentity> ids = new HashSet<StringIdentity>();
-      for (EmailToProcess email : emailsToProcess) {
-        ids.add(new StringIdentity(PersistentEmail.class, email.getMessageId()));
-        rawMap.put(email.getMessageId(), email);
-      }
-
       // List of the emails that are successfully processed.
       List<EmailToProcess> processed = new ArrayList<EmailToProcess>();
 
-      // Retrieve all the persistent emails referenced by EmailToProcess objects.
-      // This requires the referenced objects to exist in the data store.
-      @SuppressWarnings( { "unchecked" })
-      Collection<PersistentEmail> emails = pm.getObjectsById(ids, true);
-
-      for (PersistentEmail email : emails) {
-        EmailToProcess raw = rawMap.get(email.getMessageId());
+      for (EmailToProcess rawEmail : emailsToProcess) {
         try {
-          tx.begin();
-          if (processIncomingEmail(bundle, pm, raw, email))
-            processed.add(raw);
-          tx.commit();
+          PersistentEmail email = PersistentEmail.lookupByMessageId(pm, rawEmail.getMessageId());
+          if (email == null) {
+            logger.warning("PersistentEmail missing for EmailToProcess with message ID: "
+                + rawEmail.getMessageId());
+            continue;
+          }
+          if (processIncomingEmail(bundle, pm, rawEmail, email))
+            processed.add(rawEmail);
         } catch (Exception exn) {
           logger.log(Level.WARNING, "Error during processing incoming email", exn);
-        } finally {
-          if (tx.isActive())
-            tx.rollback();
         }
-      } // For loop
+      }
 
       // Purge the EmailToProcess objects that have been successfully processed.
       tx.begin();
@@ -249,22 +242,24 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       // Look for a Wavelet ID in the message references.
       // We pick the first reference we find.
       for (String refId : email.getReferences()) {
-        try {
-          // Retrieve the referenced message. Don't worry about non-existing references.
-          PersistentEmail reference = pm.getObjectById(PersistentEmail.class, refId);
-          if (reference.getWaveletId() == null)
-            continue;
-          if (!reference.getWaveletId().isEmpty()) {
-            logger.finer("Found existing Wavelet ID: " + reference.getWaveId() + " "
-                + reference.getWaveletId());
-            threadWavelet = bundle.getWavelet(reference.getWaveId(), reference.getWaveletId());
-            break;
-          }
-        } catch (JDOObjectNotFoundException nonfe) {
+        // Retrieve the referenced message. Don't worry about non-existing references.
+        PersistentEmail reference = PersistentEmail.lookupByMessageId(pm, refId);
+        if (reference == null) {
           // This just means we don't know this message ID.
           logger.finer("Unknown email message ID: " + refId);
+          continue;
         }
-
+        if (reference.getWaveletId() == null) {
+          // We know this message ID, but it has not been linked to a Wavelet yet.
+          logger.finer("Email message ID: " + refId + " has not been linked to Wavelet.");
+          continue;
+        }
+        if (!reference.getWaveletId().isEmpty()) {
+          logger.finer("Found existing Wavelet ID: " + reference.getWaveId() + " "
+              + reference.getWaveletId());
+          threadWavelet = bundle.getWavelet(reference.getWaveId(), reference.getWaveletId());
+          break;
+        }
       }
 
       if ((threadWavelet == null) && !email.getReferences().isEmpty()) {
@@ -272,14 +267,20 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
         // wavelet ID up in the referenced emails.
         // Postpone the processing a bit, until the references are processed and associated to a
         // Wavelet ID.
-        long processingDate = Calendar.getInstance().getTimeInMillis();
-        if (raw.getProcessingDate() == null)
-          raw.setProcessingDate(processingDate);
-        else
-          processingDate = raw.getProcessingDate();
+        if (raw.getProcessingDate() == null) {
+          Transaction tx = pm.currentTransaction();
+          tx.begin();
+          try {
+            raw.setProcessingDate(Calendar.getInstance().getTimeInMillis());
+            tx.commit();
+          } finally {
+            if (tx.isActive())
+              tx.rollback();
+          }
+        }
 
         // If the processing delay gets too long, we give up and create a new wave.
-        long processingDelay = Calendar.getInstance().getTimeInMillis() - processingDate;
+        long processingDelay = Calendar.getInstance().getTimeInMillis() - raw.getProcessingDate();
         if (processingDelay < config.getLong(PROCESS_EMAIL_MAX_DELAY) * 1000) {
           logger.finer("Postponing processing of incoming email " + raw.getMessageId());
           return false;
