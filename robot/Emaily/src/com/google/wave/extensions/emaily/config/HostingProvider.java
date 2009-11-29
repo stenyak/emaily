@@ -111,10 +111,11 @@ public interface HostingProvider {
   public String generateTemporaryMessageID();
 
   /**
-   * Tests if a message ID is a generated temporary message ID.
+   * Extracts the temporary message ID encoded in the Bcc email address of an outgoing email.
    * 
-   * @param messageId The message ID to test.
-   * @return True if the message ID is a temporary message ID.
+   * @param emailAddress The Bcc'ed email address.
+   * @return The temporary message ID of this email, or null if this email address does not
+   *         corresponds to a outgoing email Bcc'd to ourself.
    */
-  public boolean isTemporaryMessageID(String messageId);
+  public String getTemporaryMessageIDFromEmailAddress(String messageId);
 }

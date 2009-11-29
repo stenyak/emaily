@@ -43,7 +43,7 @@ public class IncomingEmailServlet extends HttpServlet {
   private static final long serialVersionUID = -3570174607499608832L;
   public static final String REQUEST_URI_PREFIX = "/_ah/mail/";
 
-  /** A regexp that matches fields delimited with '<' and '>'. */
+/** A regexp that matches fields delimited with '<' and '>'. */
   private static final Pattern markupPattern = Pattern.compile("\\s*<([^>]*)>");
 
   /**
@@ -148,8 +148,9 @@ public class IncomingEmailServlet extends HttpServlet {
 
     final String recipient = URLDecoder.decode(uri.substring(REQUEST_URI_PREFIX.length()), "utf8");
 
-    if (hostingProvider.isTemporaryMessageID(recipient)) {
-      final String temporaryMessageId = recipient;
+    final String temporaryMessageId = hostingProvider
+        .getTemporaryMessageIDFromEmailAddress(recipient);
+    if (temporaryMessageId != null) {
       updateMessageIdInPersistentEmail(temporaryMessageId, messageId);
       return;
     }
@@ -212,8 +213,8 @@ public class IncomingEmailServlet extends HttpServlet {
   }
 
   /**
-   * Stores an incoming email message in the data store.
-   * TODO(taton) Remove rawEmail when the active API is ready.
+   * Stores an incoming email message in the data store. TODO(taton) Remove rawEmail when the active
+   * API is ready.
    * 
    * @param rawEmail The raw email to be processed the next time the robot is triggered from a Wave
    *          server.

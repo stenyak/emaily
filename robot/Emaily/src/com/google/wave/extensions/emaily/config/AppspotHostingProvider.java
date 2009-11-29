@@ -54,7 +54,7 @@ public class AppspotHostingProvider implements HostingProvider {
    * When BCC'ing an outgoing email to ourself, the recipient starts with this prefix concatenated
    * with the generated email address token.
    */
-  public static final String OUTGOING_EMAIL_PREFIX = "outgoing_email+";
+  public static final String OUTGOING_EMAIL_PREFIX = "outgoing_email";
 
   /**
    * Pattern used to decode a Wave participant ID encoded in the recipient address of an incoming
@@ -182,11 +182,16 @@ public class AppspotHostingProvider implements HostingProvider {
 
   @Override
   public String generateTemporaryMessageID() {
-    return String.format("%s+%s", OUTGOING_EMAIL_PREFIX, generateUniqueToken());
+    return OUTGOING_EMAIL_PREFIX + generateUniqueToken();
   }
-  
+
   @Override
-  public boolean isTemporaryMessageID(String messageId) {
-    return messageId.startsWith(OUTGOING_EMAIL_PREFIX);
+  public String getTemporaryMessageIDFromEmailAddress(String emailAddress) {
+    final String suffix = "@" + appName + ".appspotmail.com";
+    if (!emailAddress.startsWith(OUTGOING_EMAIL_PREFIX))
+      return null;
+    if (!emailAddress.endsWith(suffix))
+      return null;
+    return emailAddress.substring(0, emailAddress.length() - suffix.length());
   }
 }
