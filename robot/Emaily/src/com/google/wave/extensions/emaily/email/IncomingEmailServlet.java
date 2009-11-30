@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -22,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.james.mime4j.field.address.Address;
+import org.apache.james.mime4j.field.address.Group;
 import org.apache.james.mime4j.field.address.Mailbox;
 import org.apache.james.mime4j.message.Message;
 import org.apache.james.mime4j.parser.Field;
@@ -175,40 +178,47 @@ public class IncomingEmailServlet extends HttpServlet {
     // Extracts the Wave participants.
     Set<String> waveParticipants = new HashSet<String>();
     waveParticipants.add(mainWaveRecipient);
-    if (message.getTo() != null) {
-      for (Address to : message.getTo()) {
-        // TODO(taton) Can this be anything else but Mailbox?
-        if (to instanceof Mailbox) {
-          final Mailbox emailRecipient = (Mailbox) to;
-          final String waveRecipient = hostingProvider
-              .getWaveParticipantIdFromIncomingEmailAddress(emailRecipient.getAddress());
-          if (waveRecipient != null)
-            waveParticipants.add(waveRecipient);
-          else
-            waveParticipants.add(hostingProvider.getRobotProxyForFromEmailAddress(emailRecipient
-                .getAddress()));
-        }
-      }
-    }
-    if (message.getCc() != null) {
-      for (Address cc : message.getCc()) {
-        if (cc instanceof Mailbox) {
-          final Mailbox emailRecipient = (Mailbox) cc;
-          final String waveRecipient = hostingProvider
-              .getWaveParticipantIdFromIncomingEmailAddress(emailRecipient.getAddress());
-          if (waveRecipient != null)
-            waveParticipants.add(waveRecipient);
-          else
-            waveParticipants.add(hostingProvider.getRobotProxyForFromEmailAddress(emailRecipient
-                .getAddress()));
-        }
-      }
-    }
+    getWaveParticipants(message.getFrom(), waveParticipants);
+    getWaveParticipants(message.getTo(), waveParticipants);
+    getWaveParticipants(message.getCc(), waveParticipants);
 
     // TODO(taton) We should have a better representation of users.
     final PersistentEmail email = new PersistentEmail(messageId, references, waveParticipants);
     final EmailToProcess rawEmail = new EmailToProcess(messageId, content);
     storeMessage(rawEmail, email);
+  }
+
+  /**
+   * @param addresses A list of mailbox address.
+   * @param participants The set to fill with the Wave participant IDs corresponding to the mailbox
+   *          list.
+   */
+  private void getWaveParticipants(List<? extends Address> addresses, Set<String> participants) {
+    if (addresses == null)
+      return;
+    for (Address address : addresses) {
+      if (address instanceof Mailbox) {
+        participants.add(getWaveParticipant((Mailbox) address));
+      } else if (address instanceof Group) {
+        Group group = (Group) address;
+        getWaveParticipants(group.getMailboxes(), participants);
+      } else {
+        logger.warning("Ignoring unknown address type: " + address);
+      }
+    }
+  }
+
+  /**
+   * @param mailbox A mailbox.
+   * @return The Wave ID corresponding to the mailbox.
+   */
+  private String getWaveParticipant(Mailbox mailbox) {
+    final String addr = mailbox.getAddress();
+    final String waveRecipient = hostingProvider.getWaveParticipantIdFromIncomingEmailAddress(addr);
+    if (waveRecipient != null)
+      return waveRecipient;
+    else
+      return hostingProvider.getRobotProxyForFromEmailAddress(addr);
   }
 
   /**
