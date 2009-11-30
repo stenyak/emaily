@@ -293,6 +293,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       emailBlip = newWavelet.getRootBlip();
     } else {
       // There is a Wavelet for this thread: append message to a new blip.
+      for (String participant : email.getWaveParticipants())
+        threadWavelet.addParticipant(participant);
       email.setWaveAndWaveletId(threadWavelet.getWaveId(), threadWavelet.getWaveletId());
       emailBlip = threadWavelet.appendBlip();
     }
