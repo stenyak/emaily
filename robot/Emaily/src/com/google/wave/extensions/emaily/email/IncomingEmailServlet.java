@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URLDecoder;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -175,40 +176,40 @@ public class IncomingEmailServlet extends HttpServlet {
     // Extracts the Wave participants.
     Set<String> waveParticipants = new HashSet<String>();
     waveParticipants.add(mainWaveRecipient);
-    if (message.getTo() != null) {
-      for (Address to : message.getTo()) {
-        // TODO(taton) Can this be anything else but Mailbox?
-        if (to instanceof Mailbox) {
-          final Mailbox emailRecipient = (Mailbox) to;
-          final String waveRecipient = hostingProvider
-              .getWaveParticipantIdFromIncomingEmailAddress(emailRecipient.getAddress());
-          if (waveRecipient != null)
-            waveParticipants.add(waveRecipient);
-          else
-            waveParticipants.add(hostingProvider.getRobotProxyForFromEmailAddress(emailRecipient
-                .getAddress()));
-        }
-      }
-    }
-    if (message.getCc() != null) {
-      for (Address cc : message.getCc()) {
-        if (cc instanceof Mailbox) {
-          final Mailbox emailRecipient = (Mailbox) cc;
-          final String waveRecipient = hostingProvider
-              .getWaveParticipantIdFromIncomingEmailAddress(emailRecipient.getAddress());
-          if (waveRecipient != null)
-            waveParticipants.add(waveRecipient);
-          else
-            waveParticipants.add(hostingProvider.getRobotProxyForFromEmailAddress(emailRecipient
-                .getAddress()));
-        }
-      }
-    }
+    waveParticipants.addAll(getWaveParticipants(message.getFrom()));
+    waveParticipants.addAll(getWaveParticipants(message.getTo()));
+    waveParticipants.addAll(getWaveParticipants(message.getCc()));
 
     // TODO(taton) We should have a better representation of users.
     final PersistentEmail email = new PersistentEmail(messageId, references, waveParticipants);
     final EmailToProcess rawEmail = new EmailToProcess(messageId, content);
     storeMessage(rawEmail, email);
+  }
+
+  /**
+   * @param addresses A list of mailbox address.
+   * @return The set of Wave participant IDs corresponding to the mailbox list.
+   */
+  private Set<String> getWaveParticipants(List<? extends Address> addresses) {
+    Set<String> participants = new HashSet<String>();
+    if (addresses != null)
+      for (Address address : addresses)
+        if (address instanceof Mailbox)
+          participants.add(getWaveParticipant((Mailbox) address));
+    return participants;
+  }
+
+  /**
+   * @param mailbox A mailbox.
+   * @return The Wave ID corresponding to the mailbox.
+   */
+  private String getWaveParticipant(Mailbox mailbox) {
+    final String addr = mailbox.getAddress();
+    final String waveRecipient = hostingProvider.getWaveParticipantIdFromIncomingEmailAddress(addr);
+    if (waveRecipient != null)
+      return waveRecipient;
+    else
+      return hostingProvider.getRobotProxyForFromEmailAddress(addr);
   }
 
   /**
