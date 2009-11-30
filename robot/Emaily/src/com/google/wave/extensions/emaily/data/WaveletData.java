@@ -153,6 +153,7 @@ public class WaveletData {
     // this.sentBlips = new ArrayList<BlipData>();
     this.rootBlipId = rootBlipId;
     this.participants = new ArrayList<String>();
+    this.sendMode = SendMode.AUTOMATIC;
   }
 
   // Accessors for the composite primary key
