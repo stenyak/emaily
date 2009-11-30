@@ -31,12 +31,12 @@ import com.google.wave.extensions.emaily.config.HostingProvider;
 @Singleton
 public class EmailyProfileServlet extends ProfileServlet {
   // Config properties
-  private static final String LOGO_URL = "profile.logo_url";
   private static final String ROBOT_NAME_PROD = "profile.robot_name.prod";
   private static final String ROBOT_NAME_NONPROD = "profile.robot_name.nonprod";
+  private static final String ROBOT_AVATAR_REL_URL = "img/emaily-robot.jpg";
+  private static final String EMAIL_PARTICIPANT_AVATAR_REL_URL = "img/unknown-email.jpg";
 
-  private static final String[] requiredProperties = { LOGO_URL, ROBOT_NAME_PROD,
-      ROBOT_NAME_NONPROD };
+  private static final String[] requiredProperties = { ROBOT_NAME_PROD, ROBOT_NAME_NONPROD };
 
   // Injected dependencies
   private final EmailyConfig emailyConfig;
@@ -44,7 +44,8 @@ public class EmailyProfileServlet extends ProfileServlet {
   private final Logger logger;
 
   @Inject
-  public EmailyProfileServlet(EmailyConfig emailyConfig, HostingProvider hostingProvider, Logger logger) {
+  public EmailyProfileServlet(EmailyConfig emailyConfig, HostingProvider hostingProvider,
+      Logger logger) {
     this.emailyConfig = emailyConfig;
     this.hostingProvider = hostingProvider;
     this.logger = logger;
@@ -54,7 +55,11 @@ public class EmailyProfileServlet extends ProfileServlet {
   @Override
   public String getRobotAvatarUrl() {
     // TODO(dlux): Find someone who can create an avatar for this project.
-    return emailyConfig.get(LOGO_URL);
+    return hostingProvider.getRobotURL() + ROBOT_AVATAR_REL_URL;
+  }
+
+  private String getPariticipantAvatarUrl() {
+    return hostingProvider.getRobotURL() + EMAIL_PARTICIPANT_AVATAR_REL_URL;
   }
 
   @Override
@@ -64,12 +69,17 @@ public class EmailyProfileServlet extends ProfileServlet {
   }
 
   @Override
+  public String getRobotProfilePageUrl() {
+    return hostingProvider.getRobotURL();
+  };
+
+  @Override
   public ParticipantProfile getCustomProfile(String proxyingFor) {
     // Workaround for buggy API.
     proxyingFor = proxyingFor.replaceAll(" ", "+");
     String email = hostingProvider.getEmailAddressFromRobotProxyFor(proxyingFor);
     logger.fine("Profile queried: " + proxyingFor + ", email: " + email);
-    return new ParticipantProfile(email + " (" + getRobotName() + ")", getRobotAvatarUrl(),
+    return new ParticipantProfile(email + " (" + getRobotName() + ")", getPariticipantAvatarUrl(),
         getRobotProfilePageUrl());
   }
 }

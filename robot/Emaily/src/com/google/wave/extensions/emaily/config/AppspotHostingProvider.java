@@ -14,6 +14,8 @@
  */
 package com.google.wave.extensions.emaily.config;
 
+import java.math.BigInteger;
+import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -37,15 +39,29 @@ public class AppspotHostingProvider implements HostingProvider {
   private static final String PROD_VERSION = "hosting.appspot.prod_version";
   private static final String[] requiredProperties = { PROD_VERSION };
 
+  private static final Random randomGenerator = new Random();
+
+  /** @return A random unique token. */
+  private static String generateUniqueToken() {
+    return new BigInteger(130, randomGenerator).toString(32);
+  }
+
   // Application name and version
   private final String appName;
   private final String appVersion;
 
   /**
-   * Pattern used to decode a Wave participant ID encoded in the recipient address of an
-   * incoming email.
+   * When BCC'ing an outgoing email to ourself, the recipient starts with this prefix concatenated
+   * with the generated email address token.
+   */
+  public static final String OUTGOING_EMAIL_PREFIX = "outgoing_email";
+
+  /**
+   * Pattern used to decode a Wave participant ID encoded in the recipient address of an incoming
+   * email.
    */
   private final Pattern incomingEmailAddressPattern;
+  private final Pattern proxyingForWaveAddressPattern;
 
   // Injected dependencies
   private final EmailyConfig emailyConfig;
@@ -55,7 +71,7 @@ public class AppspotHostingProvider implements HostingProvider {
     // Initialize properties
     this.emailyConfig = emailyConfig;
     emailyConfig.checkRequiredProperties(requiredProperties);
-    
+
     // Set AppEngine properties from the environment.
     appName = ApiProxy.getCurrentEnvironment().getAppId();
     StringTokenizer versionTokenizer = new StringTokenizer(ApiProxy.getCurrentEnvironment()
@@ -67,6 +83,8 @@ public class AppspotHostingProvider implements HostingProvider {
     // This pattern recognizes "anything+anything@app-id.appspotmail.com".
     // For now, it seems AppEngine only routes incoming email sent to these address forms.
     incomingEmailAddressPattern = Pattern.compile("(.*)\\+(.*)@" + appName + ".appspotmail.com");
+    // This pattern recognizes app-id+anything+anything@appspot.com.
+    proxyingForWaveAddressPattern = Pattern.compile(appName + "\\+(.*)\\+(.*)@appspot.com");
   }
 
   @Override
@@ -119,6 +137,14 @@ public class AppspotHostingProvider implements HostingProvider {
   }
 
   @Override
+  public String getEmailAddressFromRobotProxyForWaveId(String proxyFor) {
+    Matcher m = proxyingForWaveAddressPattern.matcher(proxyFor);
+    if (!m.matches())
+      return null;
+    return m.group(1) + "@" + m.group(2);
+  }
+
+  @Override
   public String getRobotWaveParticipantIdFromEmailAddress(String email) {
     int at = email.lastIndexOf('@');
     if (at < 0) {
@@ -152,5 +178,20 @@ public class AppspotHostingProvider implements HostingProvider {
   /** @return The AppEngine application ID. */
   private String getAppId() {
     return isProductionVersion() ? appName : appVersion + ".latest." + appName;
+  }
+
+  @Override
+  public String generateTemporaryMessageID() {
+    return OUTGOING_EMAIL_PREFIX + generateUniqueToken();
+  }
+
+  @Override
+  public String getTemporaryMessageIDFromEmailAddress(String emailAddress) {
+    final String suffix = "@" + appName + ".appspotmail.com";
+    if (!emailAddress.startsWith(OUTGOING_EMAIL_PREFIX))
+      return null;
+    if (!emailAddress.endsWith(suffix))
+      return null;
+    return emailAddress.substring(0, emailAddress.length() - suffix.length());
   }
 }

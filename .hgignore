@@ -2,6 +2,7 @@
 \.swp$
 \.orig$
 \.local$
+\.DS_Store$
 eclipse-workspace
 workspace
 WEB-INF/classes/.*\.class$

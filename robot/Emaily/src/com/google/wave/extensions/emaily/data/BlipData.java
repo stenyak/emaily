@@ -27,14 +27,16 @@ import javax.jdo.annotations.PrimaryKey;
 import com.google.appengine.api.datastore.Text;
 
 /**
- * A blip version object, which stores the current state of a blip in a wavelet view.
+ * A blip object, which stores the current state of a blip in a wavelet.
  * 
  * @author dlux
  * 
  */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
-public class BlipVersionView {
-  // Id of the blip view: a generated id.
+public class BlipData {
+  /**
+   * Id of the blip data: a generated id.
+   */
   @SuppressWarnings("unused")
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
@@ -42,46 +44,76 @@ public class BlipVersionView {
   private String id;
 
   @Persistent(mappedBy = "unsentBlips")
-  private WaveletView waveletView;
+  private WaveletData waveletData;
 
   // Other fields
+  /**
+   * Id of the blip.
+   */
   @Persistent
   private String blipId;
 
+  /**
+   * Version number of the blip.
+   */
   @Persistent
   private long version;
 
+  /**
+   * The wave id of the blip creator.
+   */
   @Persistent
-  private List<String> participants;
+  private String creator;
 
+  /**
+   * List of contributors to the blip.
+   */
+  @Persistent
+  private List<String> contributors;
+
+  /**
+   * Content of the blip.
+   */
   @Persistent
   private Text content;
 
+  /**
+   * The timestamp when this blip is first edited.
+   */
   @Persistent
   private long firstEditedTimestamp;
 
+  /**
+   * Latest submit time of the blip.
+   */
   @Persistent
   private long lastSubmittedTimestamp;
 
+  /**
+   * Timestamp of the last change in the blip.
+   */
   @Persistent
   private long lastChangedTimestamp;
 
-  // This field is calculated when necessary. See EmailScheduler.java
+  /**
+   * Timestamp when the user pressed the "Send" button to request a manual send.
+   */
+  @Persistent
+  private long manualSendRequestTimestamp;
+
+  // The following fields are calculated when necessary. See EmailSchedulingCalculator.java
   @NotPersistent
   private long timeToBecomeSendable;
 
-  public BlipVersionView(WaveletView waveletView, String blipId) {
-    this.waveletView = waveletView;
+  public BlipData(WaveletData waveletData, String blipId, String creator) {
+    this.waveletData = waveletData;
     this.blipId = blipId;
-  }
-
-  @SuppressWarnings("unused")
-  private BlipVersionView() {
+    this.creator = creator;
   }
 
   // Accessors
-  public WaveletView getWaveletView() {
-    return waveletView;
+  public WaveletData getWaveletData() {
+    return waveletData;
   }
 
   public String getBlipId() {
@@ -96,12 +128,20 @@ public class BlipVersionView {
     this.version = version;
   }
 
-  public List<String> getParticipants() {
-    return participants;
+  public String getCreator() {
+    return creator;
   }
 
-  public void setParticipants(List<String> participants) {
-    this.participants = participants;
+  public void setCreator(String creator) {
+    this.creator = creator;
+  }
+
+  public List<String> getContributors() {
+    return contributors;
+  }
+
+  public void setContributors(List<String> contributors) {
+    this.contributors = contributors;
   }
 
   public String getContent() {
@@ -138,11 +178,24 @@ public class BlipVersionView {
     this.lastChangedTimestamp = lastChangedTimestamp;
   }
 
+  public long getManualSendRequestTimestamp() {
+    return manualSendRequestTimestamp;
+  }
+
+  public void setManualSendRequestTimestamp(long manualSendRequestTimestamp) {
+    this.manualSendRequestTimestamp = manualSendRequestTimestamp;
+  }
+
   public long getTimeToBecomeSendable() {
     return timeToBecomeSendable;
   }
 
   public void setTimeToBecomeSendable(long timeToBecomeSendable) {
     this.timeToBecomeSendable = timeToBecomeSendable;
+  }
+
+  @Override
+  public String toString() {
+    return "BlipData(id:" + getBlipId() + ")";
   }
 }

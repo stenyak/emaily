@@ -8,9 +8,9 @@
     <w:capability name="BLIP_VERSION_CHANGED" content="true" />
     <w:capability name="WAVELET_BLIP_CREATED" content="true" />
   </w:capabilities>
-  <w:version>5</w:version>
+  <w:version>6</w:version>
   <w:profile
     name="Emaily Robot"
-    imageurl="http://1.bp.blogspot.com/_yNL0M57xbfg/Skr1tUorzkI/AAAAAAAAAIU/Texw5ki8Qw8/s320/EMAIL_ICON.jpg"
+    imageurl="http://emaily-wave.appspot.com/img/emaily-robot.jpg"
     profileurl="http://emaily-wave.appspot.com"/> 
 </w:robot>

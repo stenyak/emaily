@@ -61,7 +61,7 @@ hg status
 /bin/echo -n "*** Press ENTER if the above are OK... "
 read x
 echo "*** Uploading patch. If nothing happens for a long time, then type your username and password.."
-description="$comment
+description="$description
 Patch name: $patch"
 tmpfile="/tmp/codereview.$$"
 rietveld_upload.py \
