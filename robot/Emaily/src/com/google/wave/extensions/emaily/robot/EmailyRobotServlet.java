@@ -208,6 +208,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       tx.commit();
 
     } finally {
+      if (tx.isActive())
+        tx.rollback();
       pm.close();
     }
   }
