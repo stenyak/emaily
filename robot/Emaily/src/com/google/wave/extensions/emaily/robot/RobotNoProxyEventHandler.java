@@ -166,8 +166,13 @@ public class RobotNoProxyEventHandler {
    */
   private void processBlipContentUpdate(WaveletData waveletData, Event e, Blip blip) {
     // If the robot is a contributor, then we don't process the blip:
-    if (blip.getCreator().contains(hostingProvider.getRobotWaveId()))
+    try {
+      if (blip.getCreator().contains(hostingProvider.getRobotWaveId()))
+        return;
+    } catch (NullPointerException npe) {
+      // If the blip has no content, it returns an NPE, we don't deal with it.
       return;
+    }
 
     // Extract the content
     logger.finer("Extracting content");
@@ -255,7 +260,7 @@ public class RobotNoProxyEventHandler {
       return;
     int position = 0;
     if (blip.getWavelet().getRootBlipId().equals(blip.getBlipId()))
-      position = blip.getWavelet().getTitle().length() + 1;  // Keep the new line, too.
+      position = blip.getWavelet().getTitle().length() + 1; // Keep the new line, too.
     logger.finer(String.format("Adding gadget to position: %d", position));
     blip.getDocument().insertElement(position, new Gadget(getSendGadgetUrl()));
   }

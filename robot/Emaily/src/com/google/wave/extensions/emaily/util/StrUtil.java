@@ -53,10 +53,9 @@ public class StrUtil {
     }
     boolean first = true;
     for (Object o : objects) {
-      if (!first) {
+      if (!first)
         sb.append(separator);
-        first = false;
-      }
+      first = false;
       sb.append(o.toString());
     }
   }

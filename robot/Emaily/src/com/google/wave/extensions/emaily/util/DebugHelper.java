@@ -127,13 +127,16 @@ public class DebugHelper {
     sb.append("SendMode: ").append(waveletData.getSendMode()).append('\n');
     sb.append("Title: ").append(waveletData.getTitle()).append('\n');
     sb.append("Email address token: ").append(waveletData.getEmailAddressToken()).append('\n');
+    sb.append("Participants: ");
+    StrUtil.join(sb, waveletData.getParticipants(), ", ");
+    sb.append('\n');
     printTimestamp(sb, "Last email sent time: ", waveletData.getLastEmailSentTime());
     printTimestamp(sb, "Time for sending:     ", waveletData.getTimeForSending());
     sb.append("Unsent blips: \n");
     for (BlipData b : waveletData.getUnsentBlips()) {
       sb.append("- Blip Id: ").append(b.getBlipId()).append('\n');
       sb.append("  Blip version: ").append(b.getVersion()).append('\n');
-      sb.append("  Participants:");
+      sb.append("  Contributors:");
       StrUtil.join(sb, b.getContributors(), ", ");
       sb.append('\n');
       printTimestamp(sb, "  First edited:     ", b.getFirstEditedTimestamp());

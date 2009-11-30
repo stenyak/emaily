@@ -15,9 +15,6 @@
 
 package com.google.wave.extensions.emaily.scheduler;
 
-import static com.google.wave.extensions.emaily.config.AppspotHostingProvider.OUTGOING_EMAIL_PREFIX;
-
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -38,7 +35,6 @@ import com.google.wave.extensions.emaily.data.BlipData;
 import com.google.wave.extensions.emaily.data.PersistentEmail;
 import com.google.wave.extensions.emaily.data.WaveletData;
 import com.google.wave.extensions.emaily.email.EmailSender;
-import com.google.wave.extensions.emaily.email.EmailSender.EmailSendingException;
 import com.google.wave.extensions.emaily.util.DebugHelper;
 import com.google.wave.extensions.emaily.util.StrUtil;
 
@@ -77,11 +73,13 @@ public class ScheduledEmailSender {
 
     logger.info(String.format("Sending email from wavelet: %s %s", waveletData.getWaveId(),
         waveletData.getWaveletId()));
-    if (logger.isLoggable(Level.FINER))
-      logger.finer(debugHelper.printWaveletDataInfo(waveletData));
 
     // Calculate the next send time
     calculator.calculateWaveletDataNextSendTime(waveletData);
+
+    // Debug info
+    if (logger.isLoggable(Level.FINER))
+      logger.finer(debugHelper.printWaveletDataInfo(waveletData));
 
     // Make sure that we have to send the email.
     if (waveletData.getTimeForSending() >= now) {
@@ -150,7 +148,8 @@ public class ScheduledEmailSender {
         isBlipSendable = true;
       }
       if (isBlipSendable == false)
-        throw new IllegalArgumentException("Blip should be sendable, but not: " + b.getBlipId());
+        logger.warning("Blip should be sendable, but it is not. "
+            + "Email recipient probably removed. BlipId: " + b.getBlipId());
       sendableBlipList.add(b);
     }
   }
