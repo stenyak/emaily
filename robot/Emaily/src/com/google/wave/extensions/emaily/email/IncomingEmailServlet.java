@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -23,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.james.mime4j.field.address.Address;
+import org.apache.james.mime4j.field.address.Group;
 import org.apache.james.mime4j.field.address.Mailbox;
 import org.apache.james.mime4j.message.Message;
 import org.apache.james.mime4j.parser.Field;
@@ -176,9 +178,9 @@ public class IncomingEmailServlet extends HttpServlet {
     // Extracts the Wave participants.
     Set<String> waveParticipants = new HashSet<String>();
     waveParticipants.add(mainWaveRecipient);
-    waveParticipants.addAll(getWaveParticipants(message.getFrom()));
-    waveParticipants.addAll(getWaveParticipants(message.getTo()));
-    waveParticipants.addAll(getWaveParticipants(message.getCc()));
+    getWaveParticipants(message.getFrom(), waveParticipants);
+    getWaveParticipants(message.getTo(), waveParticipants);
+    getWaveParticipants(message.getCc(), waveParticipants);
 
     // TODO(taton) We should have a better representation of users.
     final PersistentEmail email = new PersistentEmail(messageId, references, waveParticipants);
@@ -188,15 +190,22 @@ public class IncomingEmailServlet extends HttpServlet {
 
   /**
    * @param addresses A list of mailbox address.
-   * @return The set of Wave participant IDs corresponding to the mailbox list.
+   * @param participants The set to fill with the Wave participant IDs corresponding to the mailbox
+   *          list.
    */
-  private Set<String> getWaveParticipants(List<? extends Address> addresses) {
-    Set<String> participants = new HashSet<String>();
-    if (addresses != null)
-      for (Address address : addresses)
-        if (address instanceof Mailbox)
-          participants.add(getWaveParticipant((Mailbox) address));
-    return participants;
+  private void getWaveParticipants(List<? extends Address> addresses, Set<String> participants) {
+    if (addresses == null)
+      return;
+    for (Address address : addresses) {
+      if (address instanceof Mailbox) {
+        participants.add(getWaveParticipant((Mailbox) address));
+      } else if (address instanceof Group) {
+        Group group = (Group) address;
+        getWaveParticipants(group.getMailboxes(), participants);
+      } else {
+        logger.warning("Ignoring unknown address type: " + address);
+      }
+    }
   }
 
   /**
