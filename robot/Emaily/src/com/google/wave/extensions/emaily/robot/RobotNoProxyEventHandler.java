@@ -267,7 +267,13 @@ public class RobotNoProxyEventHandler {
 
   private void processControlGadgetStateChange(WaveletData waveletData, RobotMessageBundle bundle,
       Event e, Blip blip) {
-    Gadget gadget = blip.getDocument().getGadgetView().getGadget(getAddEmailAddressGadgetUrl());
+    Gadget gadget;
+    try {
+      gadget = blip.getDocument().getGadgetView().getGadget(getAddEmailAddressGadgetUrl());
+    } catch (NullPointerException npe) {
+      // The API throws NPE if the blip has no content, we ignore it here.
+      return;
+    }
     if (gadget == null)
       return;
 
