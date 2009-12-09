@@ -78,6 +78,8 @@ import javax.xml.parsers.ParserConfigurationException;
 public abstract class AbstractRobotServlet extends HttpServlet implements RobotServlet {
   private static final String CAPABILITIES_XML_VERSION_TAG_NAME = "w:version";
   private static final String WAVE_CAPABILITIES_XML_FILE_PATH = "_wave/capabilities.xml";
+  // by dLux:
+  public static final String JSON_OBJECT_REQUEST_PARAM = "jsonObject";
 
   private static final Logger log = Logger.getLogger(AbstractRobotServlet.class.getName());
 
@@ -188,7 +190,7 @@ public abstract class AbstractRobotServlet extends HttpServlet implements RobotS
       log.fine("Incoming JSON object:\n" + sb.toString());
 
       // By dLux:
-      req.setAttribute("jsonObject", jsonObject);
+      req.setAttribute(JSON_OBJECT_REQUEST_PARAM, jsonObject);
       events = new RobotMessageBundleImpl((EventMessageBundle) serializer.unmarshall(
           new SerializerState(), EventMessageBundle.class, jsonObject), getRobotAddress());
     } catch (JSONException jsonx) {

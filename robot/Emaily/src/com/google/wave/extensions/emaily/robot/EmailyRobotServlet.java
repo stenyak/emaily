@@ -45,6 +45,7 @@ import com.google.wave.api.Wavelet;
 import com.google.wave.extensions.emaily.config.EmailyConfig;
 import com.google.wave.extensions.emaily.config.HostingProvider;
 import com.google.wave.extensions.emaily.data.EmailToProcess;
+import com.google.wave.extensions.emaily.data.EntityLockManager;
 import com.google.wave.extensions.emaily.data.PersistentEmail;
 import com.google.wave.extensions.emaily.email.MailUtil;
 
@@ -58,7 +59,14 @@ import com.google.wave.extensions.emaily.email.MailUtil;
 public class EmailyRobotServlet extends AbstractRobotServlet {
   private static final long serialVersionUID = 8878209094937861353L;
 
+  // Configuration properties:
+  // The timeout of processing one persistent email object. In ms.
+  private static final String PROCESS_EMAIL_TIMEOUT = "incoming.process_email_timeout";
+  // Maximum time until we wait for processing an incoming email. In sec.
   private static final String PROCESS_EMAIL_MAX_DELAY = "incoming.process_email_max_delay";
+
+  private static final String[] requiredLongProperties = { PROCESS_EMAIL_TIMEOUT,
+      PROCESS_EMAIL_MAX_DELAY };
 
   // Injected dependencies
   private final HostingProvider hostingProvider;
@@ -68,17 +76,17 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
   private final MailUtil mailUtil;
   private final EmailyConfig config;
   private final EmailUserProxyEventHandler emailUserProxyEventHandler;
+  private final RobotNoProxyEventHandler robotNoProxyEventHandler;
+  private final EntityLockManager entityLockManager;
 
   private MimeEntityConfig mimeEntityConfig = new MimeEntityConfig();
-
-  private final RobotNoProxyEventHandler robotNoProxyEventHandler;
 
   @Inject
   public EmailyRobotServlet(HostingProvider hostingProvider,
       Provider<HttpServletRequest> reqProvider, PersistenceManagerFactory pmFactory, Logger logger,
       MailUtil mailUtil, EmailyConfig config,
       EmailUserProxyEventHandler emailUserProxyEventHandler,
-      RobotNoProxyEventHandler robotNoProxyEventHandler) {
+      RobotNoProxyEventHandler robotNoProxyEventHandler, EntityLockManager entityLockManager) {
     this.hostingProvider = hostingProvider;
     this.reqProvider = reqProvider;
     this.pmFactory = pmFactory;
@@ -87,6 +95,9 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
     this.config = config;
     this.emailUserProxyEventHandler = emailUserProxyEventHandler;
     this.robotNoProxyEventHandler = robotNoProxyEventHandler;
+    this.entityLockManager = entityLockManager;
+
+    config.checkRequiredLongProperties(requiredLongProperties);
   }
 
   /**
@@ -111,7 +122,8 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    *         string.
    */
   private String getProxyingFor() {
-    JSONObject json = (JSONObject) reqProvider.get().getAttribute("jsonObject");
+    JSONObject json = (JSONObject) reqProvider.get().getAttribute(
+        AbstractRobotServlet.JSON_OBJECT_REQUEST_PARAM);
     if (json.has("proxyingFor")) {
       try {
         String proxyingFor = json.getString("proxyingFor");
@@ -173,7 +185,7 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
    * 
    * @param bundle The Wave events to process.
    */
-  private void processIncomingEmails(RobotMessageBundle bundle) {
+  private void processIncomingEmails(final RobotMessageBundle bundle) {
     final PersistenceManager pm = pmFactory.getPersistenceManager();
     final Transaction tx = pm.currentTransaction();
     try {
@@ -185,21 +197,30 @@ public class EmailyRobotServlet extends AbstractRobotServlet {
       if (emailsToProcess.isEmpty())
         return;
       // List of the emails that are successfully processed.
-      List<EmailToProcess> processed = new ArrayList<EmailToProcess>();
+      final List<EmailToProcess> processed = new ArrayList<EmailToProcess>();
 
-      for (EmailToProcess rawEmail : emailsToProcess) {
-        try {
-          PersistentEmail email = PersistentEmail.lookupByMessageId(pm, rawEmail.getMessageId());
-          if (email == null) {
-            logger.warning("PersistentEmail missing for EmailToProcess with message ID: "
-                + rawEmail.getMessageId());
-            continue;
+      for (final EmailToProcess rawEmail : emailsToProcess) {
+        // We run the email processing in a lock. We don't wait for the lock, because if it is
+        // locked, then it means that another thread already picked it up, so we won't need to.
+        entityLockManager.executeInLock(EmailToProcess.class, rawEmail.getMessageId(), 0, config
+            .getLong(PROCESS_EMAIL_TIMEOUT), false, new Runnable() {
+          @Override
+          public void run() {
+            try {
+              PersistentEmail email = PersistentEmail
+                  .lookupByMessageId(pm, rawEmail.getMessageId());
+              if (email == null) {
+                logger.warning("PersistentEmail missing for EmailToProcess with message ID: "
+                    + rawEmail.getMessageId());
+                return;
+              }
+              if (processIncomingEmail(bundle, pm, rawEmail, email))
+                processed.add(rawEmail);
+            } catch (Exception exn) {
+              logger.log(Level.WARNING, "Error during processing incoming email.", exn);
+            }
           }
-          if (processIncomingEmail(bundle, pm, rawEmail, email))
-            processed.add(rawEmail);
-        } catch (Exception exn) {
-          logger.log(Level.WARNING, "Error during processing incoming email", exn);
-        }
+        });
       }
 
       // Purge the EmailToProcess objects that have been successfully processed.

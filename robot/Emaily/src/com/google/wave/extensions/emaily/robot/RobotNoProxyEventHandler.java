@@ -5,17 +5,22 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.servlet.http.HttpServletRequest;
+
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
+import com.google.wave.api.AbstractRobotServlet;
 import com.google.wave.api.Blip;
 import com.google.wave.api.Event;
 import com.google.wave.api.EventType;
 import com.google.wave.api.Gadget;
 import com.google.wave.api.RobotMessageBundle;
+import com.google.wave.extensions.emaily.config.EmailyConfig;
 import com.google.wave.extensions.emaily.config.HostingProvider;
 import com.google.wave.extensions.emaily.data.BlipData;
 import com.google.wave.extensions.emaily.data.DataAccess;
+import com.google.wave.extensions.emaily.data.EntityLockManager;
 import com.google.wave.extensions.emaily.data.WaveletData;
 import com.google.wave.extensions.emaily.data.WaveletData.SendMode;
 import com.google.wave.extensions.emaily.scheduler.EmailSchedulingCalculator;
@@ -30,6 +35,16 @@ import com.google.wave.extensions.emaily.util.DebugHelper;
  */
 @Singleton
 public class RobotNoProxyEventHandler {
+  // Configuration properties:
+  // The maximum time until we wait for the wavelet data lock to be released before processing
+  // wavelet data events. In ms.
+  private static final String WAVELET_DATA_LOCK_TIMEOUT = "robot.wavelet_data_lock_timeout";
+  // The maximum expected time for processing wavelet data events. In ms.
+  private static final String WAVELET_DATA_PROCESSING_TIMEOUT = "robot.wavelet_data_processing_timeout";
+
+  private static final String[] requiredLongProperties = { WAVELET_DATA_LOCK_TIMEOUT };
+
+  // Gadget keys:
   private static final String SEND_MODE_KEY = "send_mode";
   private static final String EMAIL_GADGET_PREFIX = "email:";
   private static final String SEND_BUTTON_KEY = "send";
@@ -41,16 +56,24 @@ public class RobotNoProxyEventHandler {
   private final EmailSchedulingCalculator emailSchedulingCalculator;
   private final Provider<DataAccess> dataAccessProvider;
   private final DebugHelper debugHelper;
+  private final EntityLockManager entityLockManager;
+  private final EmailyConfig config;
+  private final Provider<HttpServletRequest> reqProvider;
 
   @Inject
   public RobotNoProxyEventHandler(Logger logger, HostingProvider hostingProvider,
       EmailSchedulingCalculator emailSchedulingCalculator, Provider<DataAccess> dataAccessProvider,
-      DebugHelper debugHelper) {
+      DebugHelper debugHelper, EntityLockManager entityLockManager, EmailyConfig config,
+      Provider<HttpServletRequest> reqProvider) {
     this.logger = logger;
     this.hostingProvider = hostingProvider;
     this.emailSchedulingCalculator = emailSchedulingCalculator;
     this.dataAccessProvider = dataAccessProvider;
     this.debugHelper = debugHelper;
+    this.entityLockManager = entityLockManager;
+    this.config = config;
+    this.reqProvider = reqProvider;
+    config.checkRequiredLongProperties(requiredLongProperties);
   }
 
   /**
@@ -59,34 +82,45 @@ public class RobotNoProxyEventHandler {
    * @param bundle The robot message bundle.
    * @param email The email of the user.
    */
-  void processEvents(RobotMessageBundle bundle) {
-    try {
-      String waveId = bundle.getWavelet().getWaveId();
-      String waveletId = bundle.getWavelet().getWaveletId();
+  void processEvents(final RobotMessageBundle bundle) {
+    final String waveId = bundle.getWavelet().getWaveId();
+    final String waveletId = bundle.getWavelet().getWaveletId();
 
-      // Get or create the wavelet data for the wavelet and the current user.
-      WaveletData waveletData = dataAccessProvider.get().getWaveletData(waveId, waveletId);
-      if (waveletData == null) {
-        waveletData = new WaveletData(waveId, waveletId, bundle.getWavelet().getRootBlipId());
-        dataAccessProvider.get().persistWaveletData(waveletData);
-      }
+    // Run the whole operation in a lock. Wait for a long time if necessary. If it cannot get the
+    // lock, then we anyway run the logic, because the worst thing that can happen is that we
+    // get a concurrent modification exception.
+    entityLockManager.executeInLock(WaveletData.class, WaveletData.buildId(waveId, waveletId),
+        config.getLong(WAVELET_DATA_LOCK_TIMEOUT), config.getLong(WAVELET_DATA_PROCESSING_TIMEOUT),
+        true, new Runnable() {
+          @Override
+          public void run() {
+            try {
+              // Get or create the wavelet data for the wavelet and the current user.
+              WaveletData waveletData = dataAccessProvider.get().getWaveletData(waveId, waveletId);
+              if (waveletData == null) {
+                waveletData = new WaveletData(waveId, waveletId, bundle.getWavelet()
+                    .getRootBlipId());
+                dataAccessProvider.get().persistWaveletData(waveletData);
+              }
 
-      updateWaveletData(waveletData, bundle);
+              updateWaveletData(waveletData, bundle);
 
-      // Process the events
-      for (Event e : bundle.getEvents()) {
-        processEvent(waveletData, bundle, e);
-      }
+              // Process the events
+              for (Event e : bundle.getEvents()) {
+                processEvent(waveletData, bundle, e);
+              }
 
-      // Calculate the next send time
-      emailSchedulingCalculator.calculateWaveletDataNextSendTime(waveletData);
+              // Calculate the next send time
+              emailSchedulingCalculator.calculateWaveletDataNextSendTime(waveletData);
 
-      // Prints the debug info
-      logger.info(debugHelper.printWaveletDataInfo(waveletData));
-      dataAccessProvider.get().commit();
-    } finally {
-      dataAccessProvider.get().close();
-    }
+              // Prints the debug info
+              logger.info(debugHelper.printWaveletDataInfo(waveletData));
+              dataAccessProvider.get().commit();
+            } finally {
+              dataAccessProvider.get().close();
+            }
+          }
+        });
   }
 
   /**
@@ -103,6 +137,10 @@ public class RobotNoProxyEventHandler {
       return;
     case BLIP_DELETED:
       processBlipDelete(waveletData, e);
+      return;
+    case OPERATION_ERROR:
+      logger.log(Level.SEVERE, "Operation error: ", reqProvider.get().getAttribute(
+          AbstractRobotServlet.JSON_OBJECT_REQUEST_PARAM));
       return;
     }
 

@@ -69,9 +69,9 @@ public class EmailSender {
       message.setSubject(subject);
       message.setTextBody(body);
       mailService.send(message);
-    } catch (IOException ioe) {
+    } catch (Exception ex) {
       throw new EmailSendingException("Cannot send email from: " + from + ", to:"
-          + StrUtil.join(recipients, ",") + " with subject:" + subject, ioe);
+          + StrUtil.join(recipients, ",") + " with subject:" + subject, ex);
     }
   }
 }
