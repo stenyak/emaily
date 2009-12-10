@@ -14,6 +14,9 @@
  */
 package com.google.wave.extensions.emaily.web;
 
+import org.apache.james.mime4j.storage.DefaultStorageProvider;
+import org.apache.james.mime4j.storage.MemoryStorageProvider;
+
 import com.google.wave.extensions.emaily.config.AppspotHostingProvider;
 import com.google.wave.extensions.emaily.config.HostingProvider;
 import com.google.wave.extensions.emaily.email.IncomingEmailServlet;
@@ -33,5 +36,8 @@ public class AppspotEmailyServletModule extends EmailyServletModule {
     serve("/_ah/mail/*").with(IncomingEmailServlet.class);
     serve("/cron/email_scheduler*").with(EmailSchedulerServlet.class);
     bind(HostingProvider.class).to(AppspotHostingProvider.class);
+    
+    // Set up mail4j to use only memory
+    DefaultStorageProvider.setInstance(new MemoryStorageProvider());
   }
 }
