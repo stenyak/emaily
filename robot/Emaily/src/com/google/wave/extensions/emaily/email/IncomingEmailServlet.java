@@ -89,7 +89,7 @@ public class IncomingEmailServlet extends HttpServlet {
         resp.setStatus(HttpURLConnection.HTTP_OK);
 
       } catch (Exception exn) {
-        exn.printStackTrace();
+        logger.log(Level.SEVERE, "Error during incoming email processing", exn);
         resp.setStatus(HttpURLConnection.HTTP_INTERNAL_ERROR);
       }
     } else {
